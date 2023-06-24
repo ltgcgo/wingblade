@@ -4,7 +4,7 @@
 "use strict";
 
 // Raw Connections
-let RawConnection = class extends EventTarget {
+let RawClient = class extends EventTarget {
 	// onopen, ondata, onclose, onerror
 	#proto;
 	#host;
@@ -93,6 +93,7 @@ let RawConnection = class extends EventTarget {
 		};
 		// Set readyState to OPEN
 		this.#readyState = this.OPEN;
+		this.dispatchEvent(new Event("open"));
 	};
 	close() {
 		if (this.#readyState > this.OPEN) {
@@ -112,6 +113,7 @@ let RawConnection = class extends EventTarget {
 		};
 		// Set readyState to CLOSED
 		this.#readyState = this.CLOSED;
+		this.dispatchEvent(new Event("close"));
 	};
 	free() {
 		// Close and forbid any further connection attempts
@@ -151,7 +153,7 @@ let RawConnection = class extends EventTarget {
 
 // Network interfaces
 let net = class {
-	static RawConnection = RawConnection;
+	static RawClient = RawClient;
 };
 
 export default net;

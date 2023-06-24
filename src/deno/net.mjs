@@ -4,7 +4,7 @@
 "use strict";
 
 // Raw Connections
-let RawConnection = class extends EventTarget {
+let RawClient = class extends EventTarget {
 	// onopen, ondata, onclose, onerror
 	#proto;
 	#host;
@@ -84,6 +84,12 @@ let RawConnection = class extends EventTarget {
 		// Open the connection
 		switch (this.#proto) {
 			case "tcp": {
+				let conn = await Deno.connect({hostname: this.#host, port: this.#port});
+				this.#controller = conn;
+				this.#source = conn.readable;
+				this.#reader = conn.readable.getReader();
+				this.#sink = conn.writable;
+				this.#writer = conn.writable.getWriter();
 				break;
 			};
 			default: {
@@ -93,6 +99,16 @@ let RawConnection = class extends EventTarget {
 		};
 		// Set readyState to OPEN
 		this.#readyState = this.OPEN;
+		this.dispatchEvent(new Event("open"));
+		// Read from stream
+		(async () => {
+			let alive = true;
+			while (alive) {
+				let {value, done} = await this.#reader.read();
+				alive = !done;
+				this.dispatchEvent(new MessageEvent("data", {data: value}));
+			};
+		})()
 	};
 	close() {
 		if (this.#readyState > this.OPEN) {
@@ -103,6 +119,7 @@ let RawConnection = class extends EventTarget {
 		// Close the connection
 		switch (this.#proto) {
 			case "tcp": {
+				this.#controller?.close();
 				break;
 			};
 			default: {
@@ -112,6 +129,7 @@ let RawConnection = class extends EventTarget {
 		};
 		// Set readyState to CLOSED
 		this.#readyState = this.CLOSED;
+		this.dispatchEvent(new Event("close"));
 	};
 	free() {
 		// Close and forbid any further connection attempts
@@ -151,7 +169,7 @@ let RawConnection = class extends EventTarget {
 
 // Network interfaces
 let net = class {
-	static RawConnection = RawConnection;
+	static RawClient = RawClient;
 };
 
 export default net;
