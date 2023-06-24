@@ -82,6 +82,15 @@ let RawConnection = class extends EventTarget {
 		// Set readyState to CONNECTING
 		this.#readyState = this.CONNECTING;
 		// Open the connection
+		switch (this.#proto) {
+			case "tcp": {
+				break;
+			};
+			default: {
+				this.free();
+				throw(new Error(`Invalid protocol "${this.#proto}"`));
+			};
+		};
 		// Set readyState to OPEN
 		this.#readyState = this.OPEN;
 	};
@@ -92,6 +101,15 @@ let RawConnection = class extends EventTarget {
 		// Set readyState to CLOSING
 		this.#readyState = this.CLOSING;
 		// Close the connection
+		switch (this.#proto) {
+			case "tcp": {
+				break;
+			};
+			default: {
+				this.free();
+				throw(new Error(`Invalid protocol "${this.#proto}"`));
+			};
+		};
 		// Set readyState to CLOSED
 		this.#readyState = this.CLOSED;
 	};
@@ -108,6 +126,10 @@ let RawConnection = class extends EventTarget {
 		proto = proto || "tcp";
 		host = host || "127.0.0.1";
 		port = port || 80;
+		// Set the object properties
+		this.#proto = proto;
+		this.#host = host;
+		this.#port = port;
 		// Send data upon connection
 		this.addEventListener("open", async () => {
 			this.#queue.forEach((e) => {
@@ -120,7 +142,6 @@ let RawConnection = class extends EventTarget {
 				this.#queue.splice(0, 0, this.#pool.splice(0, this.#pool.length));
 			};
 		});
-		// Create the underlying connection
 		// Connect immediately if set
 		if (immediateConnect) {
 			this.connect();
