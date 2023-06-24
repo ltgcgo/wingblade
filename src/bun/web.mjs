@@ -34,7 +34,7 @@ let web = class {
 						a[i] = e.replace("@", " at ").replace("[native code]", "bun:internal");
 					});
 					errStack.unshift(`${err.name || "Error"}${err.message ? ":" : ""} ${err.message || ""}`);
-					errStack = errStack.join("\n\t");
+					errStack = errStack.join("\n    ");
 					console.error(`Request error at ${request.method} ${request.url}\n${errStack}`);
 					return new Response(pageError.replace("${runtime}", WingBlade.rt.variant).replace("${stackTrace}", errStack.replaceAll(cwdPath, "wingblade:app")), {
 						status: 502,
