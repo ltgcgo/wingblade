@@ -1,0 +1,12 @@
+*.map
+*.swp
+.pnp.*
+deno.lock
+package-lock.json
+yarn.lock
+build.zip
+/.yarn/*
+/node_modules/
+/proxy/
+/dist/*.js
+/src/vendor/
