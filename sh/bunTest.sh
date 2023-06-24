@@ -1,4 +1,4 @@
 #!/bin/bash
 export TEMPLATE_URL=
-bun run src/bun/index.js
+bun run dist/app_bun.js
 exit

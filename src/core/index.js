@@ -3,7 +3,11 @@
 
 // An example WingBlade program
 
-let main = async function (args) {};
+let main = async function (args) {
+	WingBlade.web.serve(async (req, client) => {
+		throw new Error("An error");
+	});
+};
 
 export {
 	main

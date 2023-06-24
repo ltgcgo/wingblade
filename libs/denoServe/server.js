@@ -198,18 +198,18 @@ class Server {
             await requestEvent.respondWith(response);
         } catch  {}
     }
-    async #serveHttp(httpConn, connInfo1) {
+    async #serveHttp(httpConn, connInfo) {
         while(!this.#closed){
-            let requestEvent1;
+            let requestEvent;
             try {
-                requestEvent1 = await httpConn.nextRequest();
+                requestEvent = await httpConn.nextRequest();
             } catch  {
                 break;
             }
-            if (requestEvent1 === null) {
+            if (requestEvent === null) {
                 break;
             }
-            this.#respond(requestEvent1, connInfo1);
+            this.#respond(requestEvent, connInfo);
         }
         this.#closeHttpConn(httpConn);
     }
@@ -219,8 +219,8 @@ class Server {
             let conn;
             try {
                 conn = await listener.accept();
-            } catch (error1) {
-                if (error1 instanceof Deno.errors.BadResource || error1 instanceof Deno.errors.InvalidData || error1 instanceof Deno.errors.UnexpectedEof || error1 instanceof Deno.errors.ConnectionReset || error1 instanceof Deno.errors.NotConnected) {
+            } catch (error) {
+                if (error instanceof Deno.errors.BadResource || error instanceof Deno.errors.InvalidData || error instanceof Deno.errors.UnexpectedEof || error instanceof Deno.errors.ConnectionReset || error instanceof Deno.errors.NotConnected) {
                     if (!acceptBackoffDelay) {
                         acceptBackoffDelay = INITIAL_ACCEPT_BACKOFF_DELAY;
                     } else {
@@ -240,40 +240,40 @@ class Server {
                     }
                     continue;
                 }
-                throw error1;
+                throw error;
             }
             acceptBackoffDelay = undefined;
-            let httpConn1;
+            let httpConn;
             try {
-                httpConn1 = Deno.serveHttp(conn);
+                httpConn = Deno.serveHttp(conn);
             } catch  {
                 continue;
             }
-            this.#trackHttpConnection(httpConn1);
-            const connInfo2 = {
+            this.#trackHttpConnection(httpConn);
+            const connInfo = {
                 localAddr: conn.localAddr,
                 remoteAddr: conn.remoteAddr
             };
-            this.#serveHttp(httpConn1, connInfo2);
+            this.#serveHttp(httpConn, connInfo);
         }
     }
-    #closeHttpConn(httpConn2) {
-        this.#untrackHttpConnection(httpConn2);
+    #closeHttpConn(httpConn) {
+        this.#untrackHttpConnection(httpConn);
         try {
-            httpConn2.close();
+            httpConn.close();
         } catch  {}
     }
-    #trackListener(listener1) {
-        this.#listeners.add(listener1);
+    #trackListener(listener) {
+        this.#listeners.add(listener);
     }
-    #untrackListener(listener2) {
-        this.#listeners.delete(listener2);
+    #untrackListener(listener) {
+        this.#listeners.delete(listener);
     }
-    #trackHttpConnection(httpConn3) {
-        this.#httpConnections.add(httpConn3);
+    #trackHttpConnection(httpConn) {
+        this.#httpConnections.add(httpConn);
     }
-    #untrackHttpConnection(httpConn4) {
-        this.#httpConnections.delete(httpConn4);
+    #untrackHttpConnection(httpConn) {
+        this.#httpConnections.delete(httpConn);
     }
 }
 async function serveListener(listener, handler, options) {
@@ -301,7 +301,12 @@ async function serve(handler, options = {}) {
     options?.signal?.addEventListener("abort", ()=>server.close(), {
         once: true
     });
-    const s = server.listenAndServe();
+    const listener = Deno.listen({
+        port,
+        hostname,
+        transport: "tcp"
+    });
+    const s = server.serve(listener);
     port = server.addrs[0].port;
     if ("onListen" in options) {
         options.onListen?.({

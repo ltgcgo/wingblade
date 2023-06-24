@@ -3,8 +3,6 @@
 
 "use strict";
 
-import {serve} from "../../libs/denoServe/server.js";
-
 // Runtime information
 let rt = class {
 	static os = Deno.build.os;
@@ -67,7 +65,7 @@ env = new Proxy({
 			if (key.constructor == String) {
 				return target.has(key);
 			} else {
-				return !!target[key];
+				return target[key] != undefined;
 			};
 		} else {
 			return false;
@@ -75,72 +73,18 @@ env = new Proxy({
 	},
 	deleteProperty: (target, key) => {
 		if (envProtected.indexOf(key) < 0) {
-			target.delete(key);
+			if (key.constructor == String) {
+				target.delete(key);
+			} else {
+				throw(new TypeError(`Invalid type for key`));
+			};
 		} else {
 			throw(new Error(`Tried to delete protected properties`));
 		};
 	}
 });
 
-// File operations
-let file = class {
-	static async read(path, opt) {
-		return await Deno.readFile(path, opt);
-	};
-	static async write(path, data, opt) {
-		await Deno.writeFile(path, data, opt);
-	};
-};
-
-// Network interfaces
-let net = class {};
-
-// Web interfaces
-let web = class {
-	static serve(handler, opt = {}) {
-		if (!opt?.onListen) {
-			opt.onListen = function ({port, hostname}) {
-				console.error(`WingBlade serving at http://${hostname}:${port}`);
-			};
-		};
-		if (!opt?.hostname) {
-			opt.hostname = "127.0.0.1";
-		};
-		if (!opt?.port) {
-			opt.port = 8000;
-		};
-		return serve(handler, opt);
-	};
-	static acceptWs(req, opt) {
-		return Deno.upgradeWebSocket(req, opt);
-	};
-};
-
-// Common utilities
-let util = class {
-	static randomInt(cap) {
-		return Math.floor(Math.random() * cap);
-	};
-	static sleep(ms, maxAdd = 0) {
-		return new Promise((y) => {
-			let as = AbortSignal.timeout(ms + Math.floor(maxAdd * Math.random()));
-			as.addEventListener("abort", () => {
-				y();
-			});
-		});
-	};
-};
-
-let WingBlade = class {
-	static args = Deno.args;
-	static rt = rt;
-	static env = env;
-	static file = file;
-	static net = net;
-	static web = web;
-	static util = util;
-};
-
 export {
-	WingBlade
+	rt,
+	env
 };

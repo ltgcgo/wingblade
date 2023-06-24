@@ -2,7 +2,7 @@
 
 "use strict";
 
-import {WingBlade} from "./wingblade.mjs";
+import {WingBlade} from "../node/index.mjs";
 self.WingBlade = WingBlade;
 
 import {main} from "../core/index.js";
