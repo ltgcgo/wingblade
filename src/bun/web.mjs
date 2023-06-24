@@ -5,6 +5,88 @@
 
 import pageError from "../shared/error.htm";
 
+// WebSocketServer polyfill
+let WebSocketServer = class extends EventTarget {
+	#attached;
+	#url;
+	#closed = false;
+	#dataQueue = [];
+	#events = {
+		open: [],
+		message: [],
+		error: [],
+		close: []
+	};
+	addEventListener(type, handler, opt) {
+		if (type == "open") {
+			if (this.readyState < 2) {
+				handler.call(this, new Event("open"));
+			};
+		};
+		super.addEventListener(type, handler, opt);
+	};
+	get binaryType() {
+		return this.#attached?.binaryType || "";
+	};
+	get bufferedAmount() {
+		return this.#attached?.bufferedAmount || 0;
+	};
+	get extensions() {
+		return this.#attached?.extensions || "";
+	};
+	get readyState() {
+		return this.#attached?.readyState || 0;
+	};
+	get url() {
+		return this.#attached?.url || this.#url;
+	};
+	attach(wsService) {
+		if (this.#closed) {
+			return false;
+		};
+		if (this.#attached) {
+			throw(new Error("Already attached a WebSocket object"));
+			return false;
+		};
+		this.#attached = wsService;
+		let upThis = this;
+		switch (wsService.readyState) {
+			case 0:
+			case 1: {
+				upThis.dispatchEvent(new Event("open"));
+				break;
+			};
+			case 2:
+			case 3: {
+				upThis.dispatchEvent(new Event("close"));
+				break;
+			};
+		};
+	};
+	close(...args) {
+		this.#closed = true;
+		return this.#attached?.close(...args);
+	};
+	send(data) {
+		if (this.#attached) {
+			return this.#attached.send(data);
+		} else {
+			this.#dataQueue.push(data);
+			return data.length || data.size || data.byteLength || 0;
+		};
+	};
+	constructor(request) {
+		super();
+		this.#url = request.url.replace("http", "ws");
+		this.addEventListener("open", (ev) => {
+			// Send everything in the queue
+			while (this.#dataQueue.length > 0) {
+				this.#attached.send(this.#dataQueue.shift());
+			};
+		});
+	};
+};
+
 // Web interfaces
 let web = class {
 	static serve(handler, opt = {}) {
@@ -23,7 +105,7 @@ let web = class {
 					if (response?.constructor != Response) {
 						response = new Response(JSON.stringify(response), {
 							headers: {
-								"Content-Type": "application/json"
+								"Content-Type": "text/plain"
 							}
 						});
 					};

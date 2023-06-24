@@ -135,7 +135,7 @@ let web = class {
 				if (response?.constructor != Response) {
 					response = new Response(JSON.stringify(response), {
 						headers: {
-							"Content-Type": "application/json"
+							"Content-Type": "text/plain"
 						}
 					});
 				};

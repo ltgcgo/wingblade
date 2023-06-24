@@ -33,7 +33,7 @@ let web = class {
 				} else {
 					return new Response(JSON.stringify(response), {
 						headers: {
-							"Content-Type": "application/json"
+							"Content-Type": "text/plain"
 						}
 					});
 				};
