@@ -39,7 +39,7 @@ let web = class {
 				};
 			} catch (err) {
 				console.error(`Request error at ${request.method} ${request.url}\n${err.stack}`);
-				return new Response(pageError.replace("${stackTrace}", err.stack.replaceAll(cwdPath, "wingblade:app")), {
+				return new Response(pageError.replace("${runtime}", WingBlade.rt.variant).replace("${stackTrace}", err.stack.replaceAll(cwdPath, "wingblade:app")), {
 					status: 502,
 					headers: {
 						"Content-Type": "text/html"
