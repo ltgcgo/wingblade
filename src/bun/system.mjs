@@ -5,13 +5,18 @@
 
 // Runtime information
 let rt = class {
-	static os = os.platform();
-	static variant = "Node";
-	static version = process.version.replace("v", "");
+	static os = process.platform;
+	static variant = "Bun";
+	static version = Bun.version;
 	static persist = true;
 	static networkDefer = false;
 	static get memUsed() {
-		return process.memoryUsage();
+		return {
+			rss: 0,
+			heapTotal: 0,
+			heapUsed: 0,
+			external: 0
+		};
 	};
 	static exit(code = 0) {
 		process.exit(code);
@@ -23,19 +28,19 @@ let rt = class {
 let envProtected = "delete,get,has,set,toObject".split(","),
 env = new Proxy({
 	get: (key, fallbackValue) => {
-		return process.env[key] || fallbackValue;
+		return Bun.env[key] || fallbackValue;
 	},
 	set: (key, value) => {
-		process.env[key] = value;
+		Bun.env[key] = value;
 	},
 	delete: (key) => {
-		delete process.env[key];
+		delete Bun.env[key];
 	},
 	has: (key) => {
-		return !!process.env[key];
+		return !!Bun.env[key];
 	},
 	toObject: () => {
-		return process.env;
+		return Bun.env;
 	}
 }, {
 	get: (target, key) => {

@@ -5,8 +5,8 @@
 
 let main = async function (args) {
 	WingBlade.web.serve(async (req, client) => {
-		return `Hello from ${WingBlade.rt.variant} on ${WingBlade.rt.os}!`;
-		//throw new Error("An error");
+		//return `Hello from ${WingBlade.rt.variant} on ${WingBlade.rt.os}!`;
+		throw new Error("An error");
 	});
 };
 

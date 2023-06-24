@@ -102,7 +102,7 @@ let web = class {
 		// Deno std/http/server.ts:serve()
 		let cwdPath = `file://${process.cwd()}`;
 		let port = opt.port || 8000;
-		let hostname = opt.hostname || "127.0.0.1";
+		let hostname = opt.hostname || "0.0.0.0";
 		let server = http.createServer(async function (requester, responder) {
 			let readStreamController;
 			let bodyStream = new ReadableStream({
@@ -184,6 +184,9 @@ let web = class {
 		});
 		server.listen(port, hostname, () => {
 			(opt.onListen || function ({port, hostname}) {
+				if (hostname) {
+					hostname = "127.0.0.1";
+				};
 				console.error(`WingBlade serving at http://${hostname}:${port}`);
 			})({port, hostname});
 		});

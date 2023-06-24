@@ -8,8 +8,13 @@ let util = class {
 	static randomInt(cap) {
 		return Math.floor(Math.random() * cap);
 	};
-	static async sleep(ms, maxAdd = 0) {
-		await Bun.sleep(ms + Math.floor(maxAdd * Math.random()));
+	static sleep(ms, maxAdd = 0) {
+		return new Promise((y) => {
+			let as = AbortSignal.timeout(ms + Math.floor(maxAdd * Math.random()));
+			as.addEventListener("abort", () => {
+				y();
+			});
+		});
 	};
 };
 
