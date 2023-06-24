@@ -26,6 +26,20 @@ let main = async function (args) {
 			};
 		};
 	});
+	let tcpServer = new WingBlade.net.RawServer({port: 8005}, true);
+	tcpServer.addEventListener("accept", async (ev) => {
+		let socket = ev.data;
+		socket.addEventListener("open", () => {
+			console.debug(`TCP opened.`);
+			socket.send(new Uint8Array([240, 67, 16, 247]));
+		});
+		socket.addEventListener("message", ({data}) => {
+			socket.send(data);
+		});
+		socket.addEventListener("open", () => {
+			console.debug(`TCP closed.`);
+		});
+	});
 };
 
 export {

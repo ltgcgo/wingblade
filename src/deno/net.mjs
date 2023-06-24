@@ -54,7 +54,7 @@ let RawClient = class extends EventTarget {
 		if (this.#freed) {
 			throw(new Error(`Cannot enqueue or send data on a freed connection`));
 		};
-		if (this.#readyState != 1) {
+		if (this.#readyState != this.OPEN) {
 			// Enqueue data in data queue
 			this.#queue.push(data);
 		} else if (this.#writer?.desiredSize < 0 || this.#pool.length) {
@@ -78,6 +78,7 @@ let RawClient = class extends EventTarget {
 		};
 		if (this.#readyState < this.CLOSING) {
 			console.debug(`${this.#proto.toUpperCase()} connection is already open.`);
+			return;
 		};
 		// Set readyState to CONNECTING
 		this.#readyState = this.CONNECTING;
@@ -106,13 +107,19 @@ let RawClient = class extends EventTarget {
 			while (alive) {
 				let {value, done} = await this.#reader.read();
 				alive = !done;
-				this.dispatchEvent(new MessageEvent("data", {data: value}));
+				if (value) {
+					this.dispatchEvent(new MessageEvent("data", {data: value}));
+				};
+				if (done) {
+					this.close();
+				};
 			};
 		})()
 	};
 	close() {
 		if (this.#readyState > this.OPEN) {
 			console.debug(`${this.#proto.toUpperCase()} connection is already closed.`);
+			return;
 		};
 		// Set readyState to CLOSING
 		this.#readyState = this.CLOSING;
@@ -138,13 +145,13 @@ let RawClient = class extends EventTarget {
 		// Returns any data not sent
 		return this.#queue.splice(0, this.#queue.length);
 	};
-	constructor({proto, host, port}, immediateConnect) {
+	constructor({proto, host, port}, immediate) {
 		super();
 		// Default values
 		proto = proto || "tcp";
 		host = host || "127.0.0.1";
 		port = port || 80;
-		// Set the object properties
+		// Set object properties
 		this.#proto = proto;
 		this.#host = host;
 		this.#port = port;
@@ -161,8 +168,177 @@ let RawClient = class extends EventTarget {
 			};
 		});
 		// Connect immediately if set
-		if (immediateConnect) {
+		if (immediate) {
 			this.connect();
+		};
+	};
+};
+let RawServerSocket = class extends EventTarget {
+	// onopen, ondata, onclose, onerror
+	#clientAddr;
+	#controller;
+	#source;
+	#sink;
+	#reader; // DefaultReader
+	#writer; // DefaultWriter
+	#readyState = 1;
+	OPEN = 1;
+	CLOSING = 2;
+	CLOSED = 3;
+	get ip() {
+		return this.#clientAddr.hostname || "0.0.0.0";
+	};
+	get port() {
+		return this.#clientAddr.port || 0;
+	};
+	get readyState() {
+		return this.#readyState;
+	};
+	get source() {
+		return this.#reader;
+	};
+	get sink() {
+		return this.#writer;
+	};
+	send(data) {
+		// Send data when connected
+		// Enqueued data otherwise
+		if (this.#readyState == 1) {
+			// Send data
+			this.#writer.write(data);
+		};
+	};
+	close() {
+		this.#readyState = this.CLOSING;
+		this.#controller.close();
+		this.#readyState = this.CLOSED;
+		this.dispatchEvent(new Event("close"));
+	};
+	addEventListener(type, handler, opt) {
+		if (type == "open") {
+			if (this.readyState == this.OPEN) {
+				handler.call(this, new Event("open"));
+			};
+		};
+		super.addEventListener(type, handler, opt);
+	};
+	constructor(denoConn) {
+		super();
+		this.#clientAddr = denoConn.remoteAddr;
+		this.#controller = denoConn;
+		this.#source = denoConn.readable;
+		this.#reader = denoConn.readable.getReader();
+		this.#sink = denoConn.writable;
+		this.#writer = denoConn.writable.getWriter();
+		(async () => {
+			let alive = true;
+			while (alive) {
+				let {value, done} = await this.#reader.read();
+				alive = !done;
+				if (value) {
+					this.dispatchEvent(new MessageEvent("data", {data: value}));
+				};
+				if (done) {
+					this.close();
+				};
+			};
+		})();
+	};
+};
+let RawServer = class extends EventTarget {
+	// onlisten, onaccept, onclose, onerror
+	#proto;
+	#host;
+	#port;
+	#reuse;
+	#controller;
+	#active = false;
+	#freed = false;
+	get active() {
+		return this.#active;
+	};
+	get proto() {
+		return this.#proto;
+	};
+	get host() {
+		return this.#host;
+	};
+	get port() {
+		return this.#port;
+	};
+	get reuse() {
+		return this.#reuse;
+	};
+	async listen() {
+		if (this.#freed) {
+			throw(new Error(`Cannot restart a freed connection`));
+		};
+		if (this.#active) {
+			console.debug(`${this.#proto.toUpperCase()} server on ${this.#host}:${this.#port} is already active.`);
+			return;
+		};
+		try {
+			switch (this.#proto) {
+				case "tcp": {
+					this.#controller = Deno.listen({
+						hostname: this.#host,
+						port: this.#port,
+						reusePort: this.#reuse
+					});
+					this.dispatchEvent(new Event("listen"));
+					for await (const conn of this.#controller.accept()) {
+						this.dispatchEvent(new MessageEvent("accept"), {data: new RawServerSocket(conn)});
+					};
+					break;
+				};
+				default: {
+					this.free();
+					throw(new Error(`Invalid protocol "${this.#proto}"`));
+				};
+			};
+		} catch (err) {
+			this.dispatchEvent(new Event("close"));
+		};
+	};
+	close() {
+		if (!this.#active) {
+			console.debug(`${this.#proto.toUpperCase()} server on ${this.#host}:${this.#port} is already closed.`);
+			return;
+		};
+		switch (this.#proto) {
+			case "tcp": {
+				this.#controller?.close();
+				break;
+			};
+			default: {
+				this.free();
+				throw(new Error(`Invalid protocol "${this.#proto}"`));
+			};
+		};
+	};
+	free() {
+		// Close and forbid any further connection attempts
+		this.close();
+		this.#freed = true;
+	};
+	constructor({proto, host, port, reuse}, immediate) {
+		super();
+		// Default values
+		proto = proto || "tcp";
+		host = host || "0.0.0.0";
+		port = port || 8000;
+		// Set object properties
+		this.#proto = proto;
+		this.#host = host;
+		this.#port = port;
+		this.#reuse = reuse;
+		// Show message on listen
+		this.addEventListener("listen", () => {
+			console.error(`WingBlade ${proto.toUpperCase()} server listening on ${host}:${port}`);
+		});
+		// Listen if immediate
+		if (immediate) {
+			this.listen();
 		};
 	};
 };
@@ -170,6 +346,7 @@ let RawClient = class extends EventTarget {
 // Network interfaces
 let net = class {
 	static RawClient = RawClient;
+	static RawServer = RawServer;
 };
 
 export default net;
