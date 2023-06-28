@@ -28,6 +28,7 @@ let main = async function (args) {
 	});
 	let tcpServer = new WingBlade.net.RawServer({port: 8005}, true);
 	tcpServer.addEventListener("accept", async (ev) => {
+		console.debug(`TCP accepted.`);
 		let socket = ev.data;
 		socket.addEventListener("open", () => {
 			console.debug(`TCP opened.`);
@@ -36,7 +37,7 @@ let main = async function (args) {
 		socket.addEventListener("message", ({data}) => {
 			socket.send(data);
 		});
-		socket.addEventListener("open", () => {
+		socket.addEventListener("close", () => {
 			console.debug(`TCP closed.`);
 		});
 	});

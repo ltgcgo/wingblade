@@ -103,16 +103,24 @@ let RawClient = class extends EventTarget {
 		this.dispatchEvent(new Event("open"));
 		// Read from stream
 		(async () => {
-			let alive = true;
-			while (alive) {
-				let {value, done} = await this.#reader.read();
-				alive = !done;
-				if (value) {
-					this.dispatchEvent(new MessageEvent("data", {data: value}));
+			try {
+				let alive = true;
+				while (alive) {
+					let {value, done} = await this.#reader.read();
+					alive = !done;
+					if (value) {
+						this.dispatchEvent(new MessageEvent("data", {data: value}));
+					};
+					if (done) {
+						this.close();
+					};
 				};
-				if (done) {
-					this.close();
-				};
+			} catch (err) {
+				this.dispatchEvent(new ErrorEvent("error", {
+					message: err.message,
+					error: err
+				}));
+				this.close();
 			};
 		})()
 	};
@@ -126,11 +134,13 @@ let RawClient = class extends EventTarget {
 		// Close the connection
 		switch (this.#proto) {
 			case "tcp": {
-				this.#controller?.close();
+				let {rid} = this.#controller;
+				if (Deno.resources()[rid]) {
+					this.#controller?.close();
+				};
 				break;
 			};
 			default: {
-				this.free();
 				throw(new Error(`Invalid protocol "${this.#proto}"`));
 			};
 		};
@@ -277,23 +287,24 @@ let RawServer = class extends EventTarget {
 			console.debug(`${this.#proto.toUpperCase()} server on ${this.#host}:${this.#port} is already active.`);
 			return;
 		};
+		let upThis = this;
 		try {
 			switch (this.#proto) {
 				case "tcp": {
-					this.#controller = Deno.listen({
-						hostname: this.#host,
-						port: this.#port,
-						reusePort: this.#reuse
+					upThis.#controller = Deno.listen({
+						hostname: upThis.#host,
+						port: upThis.#port,
+						reusePort: upThis.#reuse
 					});
-					this.dispatchEvent(new Event("listen"));
-					for await (const conn of this.#controller.accept()) {
-						this.dispatchEvent(new MessageEvent("accept"), {data: new RawServerSocket(conn)});
+					upThis.dispatchEvent(new Event("listen"));
+					for await (const conn of upThis.#controller.accept()) {
+						upThis.dispatchEvent(new MessageEvent("accept"), {data: new RawServerSocket(conn)});
 					};
 					break;
 				};
 				default: {
-					this.free();
-					throw(new Error(`Invalid protocol "${this.#proto}"`));
+					upThis.free();
+					throw(new Error(`Invalid protocol "${upThis.#proto}"`));
 				};
 			};
 		} catch (err) {
@@ -309,10 +320,6 @@ let RawServer = class extends EventTarget {
 			case "tcp": {
 				this.#controller?.close();
 				break;
-			};
-			default: {
-				this.free();
-				throw(new Error(`Invalid protocol "${this.#proto}"`));
 			};
 		};
 	};
