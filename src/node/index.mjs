@@ -7,7 +7,7 @@ import {rt, env} from "./system.mjs";
 import file from "./file.mjs";
 import net from "./net.mjs";
 import web from "./web.mjs";
-import util from "../shared/util.mjs";
+import util from "./util.mjs";
 
 let WingBlade = class {
 	static args = process.argv.slice(2);
