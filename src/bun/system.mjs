@@ -11,12 +11,7 @@ let rt = class {
 	static persist = true;
 	static networkDefer = false;
 	static get memUsed() {
-		return {
-			rss: 0,
-			heapTotal: 0,
-			heapUsed: 0,
-			external: 0
-		};
+		return process.memoryUsage();
 	};
 	static exit(code = 0) {
 		process.exit(code);
