@@ -3,6 +3,29 @@
 
 "use strict";
 
+import {PermissionStatus} from "../shared/polyfill.mjs";
+
+let perms = {
+	"query": async (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	},
+	"request": async (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	},
+	"revoke": async (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	},
+	"querySync": (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	},
+	"requestSync": (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	},
+	"revokeSync": (descriptor) => {
+		return new PermissionStatus(descriptor?.name);
+	}
+};
+
 // Runtime information
 let rt = class {
 	static os = os.platform();
@@ -10,8 +33,20 @@ let rt = class {
 	static version = process.version.replace("v", "");
 	static persist = true;
 	static networkDefer = false;
-	static get memUsed() {
-		return process.memoryUsage();
+	static cores = os.cpus().length;
+	static perms = perms;
+	static get memory() {
+		let {rss, heapTotal, heapUsed, external} = process.memoryUsage();
+		let total = os.totalmem();
+		let free = os.freemem();
+		return {
+			rss,
+			heapTotal,
+			heapUsed,
+			external,
+			total,
+			free
+		};
 	};
 	static exit(code = 0) {
 		process.exit(code);

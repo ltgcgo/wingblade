@@ -3,6 +3,27 @@
 
 "use strict";
 
+let perms = {
+	"query": (descriptor) => {
+		return Deno.permissions.query(descriptor);
+	},
+	"request": (descriptor) => {
+		return Deno.permissions.request(descriptor);
+	},
+	"revoke": (descriptor) => {
+		return Deno.permissions.revoke(descriptor);
+	},
+	"querySync": (descriptor) => {
+		return Deno.permissions.querySync(descriptor);
+	},
+	"requestSync": (descriptor) => {
+		return Deno.permissions.requestSync(descriptor);
+	},
+	"revokeSync": (descriptor) => {
+		return Deno.permissions.revokeSync(descriptor);
+	}
+};
+
 // Runtime information
 let rt = class {
 	static os = Deno.build.os;
@@ -10,8 +31,19 @@ let rt = class {
 	static version = Deno.version.deno;
 	static persist = true;
 	static networkDefer = false;
-	static get memUsed() {
-		return Deno.memoryUsage();
+	static cores = 0 || 8;
+	static perms = perms;
+	static get memory() {
+		let {rss, heapTotal, heapUsed, external} = Deno.memoryUsage();
+		let {total, free} = Deno.systemMemoryInfo();
+		return {
+			rss,
+			heapTotal,
+			heapUsed,
+			external,
+			total,
+			free
+		};
 	};
 	static exit(code = 0) {
 		Deno.exit(code);

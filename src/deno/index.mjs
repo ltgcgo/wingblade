@@ -8,7 +8,7 @@ import file from "./file.mjs";
 import net from "./net.mjs";
 import web from "./web.mjs";
 import util from "./util.mjs";
-import {initEnv, initNavigator} from "../shared/browser.mjs";
+import {initNavigator} from "../shared/browser.mjs";
 
 let WingBlade = class {
 	static args = Deno.args;
@@ -20,8 +20,7 @@ let WingBlade = class {
 	static util = util;
 };
 
-initEnv(WingBlade);
-initNavigator();
+initNavigator(WingBlade);
 
 export {
 	WingBlade

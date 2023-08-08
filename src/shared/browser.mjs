@@ -3,13 +3,7 @@
 
 "use strict";
 
-let WingBlade;
-
-let initEnv = function (wbObj) {
-	WingBlade = wbObj;
-};
-
-let initNavigator = function () {
+let initNavigator = function (WingBlade) {
 	if (!self.navigator) {
 		self.navigator = {};
 	};
@@ -20,17 +14,33 @@ let initNavigator = function () {
 	if (!navObj.language) {
 		navObj.language = null;
 	};
+	if (!navObj.languages?.constructor) {
+		navObj.languages = [];
+	};
+	if (!navObj.hardwareConcurrency) {
+		navObj.hardwareConcurrency = WingBlade.rt.cores;
+	};
+	if (!navObj.deviceMemory) {
+		navObj.deviceMemory = Math.min(2 ** Math.round(Math.log2(WingBlade.rt.memory.total / 1073741824)), 8);
+	};
+	if (!navObj.permissions) {
+		navObj.permissions = {
+			"query": (descriptor) => {
+				return WingBlade.rt.perms.querySync(descriptor);
+			}
+		};
+	};
 	switch (WingBlade.rt.variant) {
-		case "node": {
-			if (!navObj.hardwareConcurrency) {
-				navObj.hardwareConcurrency = os.cpus().length;
-			};
+		case "Node":
+		case "Bun": {
+			break;
+		};
+		case "Deno": {
 			break;
 		};
 	};
 };
 
 export {
-	initEnv,
 	initNavigator
 };
