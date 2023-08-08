@@ -8,6 +8,7 @@ import file from "./file.mjs";
 import net from "./net.mjs";
 import web from "./web.mjs";
 import util from "./util.mjs";
+import {initEnv, initNavigator} from "../shared/browser.mjs";
 
 let WingBlade = class {
 	static args = process.argv.slice(2);
@@ -18,6 +19,9 @@ let WingBlade = class {
 	static web = web;
 	static util = util;
 };
+
+initEnv(WingBlade);
+initNavigator();
 
 export {
 	WingBlade

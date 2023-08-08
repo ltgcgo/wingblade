@@ -4,6 +4,13 @@
 // An example WingBlade program
 
 let main = async function (args) {
+	// Print navigator info out
+	console.info("{");
+	for (let i in self.navigator) {
+		console.info(`    "${i}": ${JSON.stringify(navigator[i])}`);
+	};
+	console.info("}");
+	// Start a web server
 	WingBlade.web.serve(async (req, client) => {
 		switch (true) {
 			case (req.headers.get("upgrade")?.toLowerCase() == "websocket"): {
@@ -26,7 +33,7 @@ let main = async function (args) {
 			};
 		};
 	});
-	let tcpServer = new WingBlade.net.RawServer({port: 8005}, true);
+	/* let tcpServer = new WingBlade.net.RawServer({port: 8005}, true);
 	tcpServer.addEventListener("accept", async (ev) => {
 		console.debug(`TCP accepted.`);
 		let socket = ev.data;
@@ -40,7 +47,7 @@ let main = async function (args) {
 		socket.addEventListener("close", () => {
 			console.debug(`TCP closed.`);
 		});
-	});
+	}); */
 };
 
 export {

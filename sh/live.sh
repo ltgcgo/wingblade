@@ -26,5 +26,6 @@ if [ -e "src/${1:-default}/index.mjs" ] ; then
 	ext="mjs"
 fi
 esbuild --bundle src/${1:-default}/index.${ext} $platform $prefix $affix $inject --charset=utf8 --format=$format --loader:.htm=text --loader:.css=text --outfile=proxy/${1:-default}.${ext} ${2:---minify-whitespace --minify-syntax --sourcemap}
+#sed -zi 's/\nvar /\nlet /g;s/;var /;let /g' proxy/${1:-default}.${ext}
 cat proxy/${1:-default}.${ext}
 exit

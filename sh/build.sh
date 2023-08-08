@@ -31,5 +31,8 @@ ls -1 src | while IFS= read -r dir ; do
 	if [ -e "proxy/${dir}.${ext}" ] ; then
 		cat proxy/${dir}.${ext} >> dist/${dir}.${ext}
 	fi
+	if [ -e "dist/${dir}.${ext}" ] ; then
+		sed -zi 's/\nvar /\nlet /g;s/;var /;let /g' dist/${dir}.${ext}
+	fi
 done
 exit
