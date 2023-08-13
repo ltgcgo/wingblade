@@ -17,8 +17,17 @@ switch (WingBlade.args[0]) {
 		break;
 	};
 	case "2": {
-		let choker = new ChokerStream(16384, true);
-		choker.source.array().then(console.info);
+		//let choker2 = new ChokerStream(255, true);
+		let choker = new ChokerStream(parseInt(WingBlade.args[1]) || 1024, true);
+		choker.source.array().then((result) => {
+			//console.info(result);
+			let bytes = 0;
+			result.forEach((e) => {
+				bytes += e.byteLength;
+			});
+			console.info(`Processed ${bytes} bytes.`);
+		});
+		//choker.attach(choker2.source);
 		choker.attach((await fetch(`https://gh.ltgc.cc/midi-demo-data/collection/octavia/KANDI8.mid`)).body);
 		break;
 	};

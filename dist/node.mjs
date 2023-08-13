@@ -403,30 +403,29 @@ let MiniSignal = class {
     upThis.#chunk = maxChunkSize, upThis.alwaysCopy = alwaysCopy, upThis.#strategy = new ByteLengthQueuingStrategy({
       highWaterMark: maxChunkSize
     });
-    let bufferLength = 0, buffer;
+    let bufferLength = 0, buffer, totalReadBytes = 0, cycleReadBytes = 0, currentWalkedBytes = 0;
     upThis.#sink = new ReadableStream({
       cancel: async (reason) => {
-        console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream cancel.`), await upThis.#source.cancel(reason);
+        await upThis.#source.cancel(reason);
       },
       start: async (controller) => {
-        upThis.#calls++, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream start.`);
       },
       pull: async (controller) => {
-        upThis.#calls++, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream drain.`);
+        upThis.#calls++;
         let useCopy = !1;
-        console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Waiting for upstream attachment...`), await upThis.#attachSignal.wait(), console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Waiting for upstream data...`);
+        await upThis.#attachSignal.wait();
         let resume = !0, readBytes = 0;
         for (; resume && readBytes < upThis.#chunk; ) {
           let { done, value } = await upThis.#reader.read(), valueSize = value?.byteLength || 0;
-          readBytes += valueSize, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read ${valueSize} byte(s). Total: ${readBytes} B.`);
+          readBytes += valueSize, cycleReadBytes += valueSize, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read ${valueSize} byte(s). Cycle: ${cycleReadBytes} B.`);
           let flushedBytes = 0, offsetBytes = 0, readView, unfinished = !0;
           if (value?.byteLength)
             for (readView = new Uint8Array(value.buffer, value.byteOffset, value.byteLength); unfinished; ) {
               let commitBuffer;
-              if (readView.byteLength <= flushedBytes + upThis.#chunk && (unfinished = !1), bufferLength) {
+              if (readView.byteLength < 1 && (unfinished = !1), bufferLength) {
                 let flushBuffer = readView.subarray(0, upThis.#chunk - bufferLength);
-                buffer.set(flushBuffer, bufferLength), flushedBytes += flushBuffer.byteLength, bufferLength + readView.byteLength < upThis.#chunk ? (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read window smaller than chunk (${bufferLength} + ${flushBuffer.byteLength}). Writing to cache.`), bufferLength += readView.byteLength) : (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read window satisfies commit criteria (${bufferLength} + ${readView.byteLength}). Using cached commit buffer.`), commitBuffer = buffer, bufferLength = 0, buffer = new Uint8Array(upThis.#chunk)), readView = readView.subarray(flushBuffer);
-              } else if (!commitBuffer) {
+                buffer.set(flushBuffer, bufferLength), bufferLength + flushBuffer.byteLength < upThis.#chunk ? bufferLength += readView.byteLength : (commitBuffer = buffer, bufferLength = 0, buffer = new Uint8Array(upThis.#chunk)), readView = readView.subarray(flushBuffer.byteLength);
+              } else {
                 if (readView.byteLength < upThis.#chunk)
                   bufferLength = readView.byteLength, buffer?.constructor != Uint8Array && (buffer = new Uint8Array(upThis.#chunk)), buffer.set(readView);
                 else {
@@ -435,10 +434,11 @@ let MiniSignal = class {
                 }
                 readView = readView.subarray(upThis.#chunk);
               }
-              commitBuffer && controller.enqueue(commitBuffer);
+              commitBuffer && (controller.enqueue(commitBuffer), currentWalkedBytes += commitBuffer.byteLength);
             }
-          done && (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream finished.`), bufferLength && controller.enqueue(buffer.subarray(0, bufferLength)), controller.close(), resume = !1);
+          done && (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream finished.`), bufferLength && (controller.enqueue(buffer.subarray(0, bufferLength)), console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Flushed ${bufferLength} bytes.`)), controller.close(), resume = !1);
         }
+        totalReadBytes += readBytes, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read finished. Total: ${totalReadBytes} B.`);
       }
     }, this.#strategy), console.debug("ChokerStream constructed.");
   }
