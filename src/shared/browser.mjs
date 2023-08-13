@@ -3,6 +3,8 @@
 
 "use strict";
 
+import ChokerStream from "./ext/choker.mjs";
+
 let initNavigator = function (WingBlade) {
 	if (!self.navigator) {
 		self.navigator = {};
@@ -40,6 +42,8 @@ let initNavigator = function (WingBlade) {
 		};
 	};
 };
+
+self.ChokerStream = ChokerStream;
 
 export {
 	initNavigator

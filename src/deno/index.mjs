@@ -8,6 +8,7 @@ import file from "./file.mjs";
 import net from "./net.mjs";
 import web from "./web.mjs";
 import util from "./util.mjs";
+import {} from "./stream.mjs";
 import {initNavigator} from "../shared/browser.mjs";
 
 let WingBlade = class {

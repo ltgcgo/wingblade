@@ -1,6 +1,433 @@
 // Copyright (c) Lightingale WingBlade Author(s) 2023.
 // Licensed under GNU LGPL 3.0 or later.
-"use strict";import os from"node:os";import dns from"node:dns";let T=Object.defineProperty;let N=(e,t,r)=>t in e?T(e,t,{enumerable:!0,configurable:!0,writable:!0,value:r}):e[t]=r;let s=(e,t,r)=>(N(e,typeof t!="symbol"?t+"":t,r),r);let h=class{constructor(e,t="granted"){if(!e)throw new TypeError(`The provided value "${e}" is not a valid permission name.`);this.name=e,this.state=t}};let B={query:async e=>new h(e?.name),request:async e=>new h(e?.name),revoke:async e=>new h(e?.name),querySync:e=>new h(e?.name),requestSync:e=>new h(e?.name),revokeSync:e=>new h(e?.name)},a,v=(a=class{static get memory(){let{rss:e,heapTotal:t,heapUsed:r,external:u}=process.memoryUsage(),c=os.totalmem(),f=os.freemem();return{rss:e,heapTotal:t,heapUsed:r,external:u,total:c,free:f}}static exit(e=0){process.exit(e)}},s(a,"os",process.platform),s(a,"variant","Bun"),s(a,"version",Bun.version),s(a,"persist",!0),s(a,"networkDefer",!1),s(a,"cores",os.cpus().length),s(a,"perms",B),a),d="delete,get,has,set,toObject".split(","),m=new Proxy({get:(e,t)=>Bun.env[e]||t,set:(e,t)=>{Bun.env[e]=t},delete:e=>{delete Bun.env[e]},has:e=>!!Bun.env[e],toObject:()=>Bun.env},{get:(e,t)=>d.indexOf(t)<0&&t.constructor==String?e.get(t):e[t],set:(e,t,r)=>{if(d.indexOf(t)<0)if(t.constructor==String)e.set(t,r);else throw new TypeError("Invalid type for key");else throw new Error("Tried to write protected properties")},has:(e,t)=>d.indexOf(t)<0?t.constructor==String?e.has(t):e[t]!=null:!1,deleteProperty:(e,t)=>{if(d.indexOf(t)<0)if(t.constructor==String)e.delete(t);else throw new TypeError("Invalid type for key");else throw new Error("Tried to delete protected properties")}});let k=class{static async read(e,t){return new Uint8Array(await Bun.file(e).arrayBuffer())}static async write(e,t,r){await Bun.write(e,t)}},g=k;let L=class extends EventTarget{#e;#s;#n;#o;#l;#u;#h;#i;#a=[];#r=[];#t=3;#c=!1;CONNECTING=0;OPEN=1;CLOSING=2;CLOSED=3;get protocol(){return this.#e}get hostname(){return this.#s}get port(){return this.#n}get readyState(){return this.#t}get source(){return this.#h}get sink(){return this.#i}addEventListener(e,t,r){e=="open"&&this.readyState==this.OPEN&&t.call(this,new Event("open")),super.addEventListener(e,t,r)}send(e){if(this.#c)throw new Error("Cannot enqueue or send data on a freed connection");this.#t!=1?this.#a.push(e):this.#i?.desiredSize<0||this.#r.length?(this.#r.push(e),this.#i.ready.then(()=>{let t=this.#r.shift();t&&this.#i.write(t)})):this.#i.write(e)}async connect(){if(this.#c)throw new Error("Cannot restart a freed connection");switch(this.#t<this.CLOSING&&console.debug(`${this.#e.toUpperCase()} connection is already open.`),this.#t=this.CONNECTING,this.#e){case"tcp":break;default:throw this.free(),new Error(`Invalid protocol "${this.#e}"`)}this.#t=this.OPEN,this.dispatchEvent(new Event("open"))}close(){switch(this.#t>this.OPEN&&console.debug(`${this.#e.toUpperCase()} connection is already closed.`),this.#t=this.CLOSING,this.#e){case"tcp":break;default:throw this.free(),new Error(`Invalid protocol "${this.#e}"`)}this.#t=this.CLOSED,this.dispatchEvent(new Event("close"))}free(){return this.close(),this.#c=!0,this.#a.splice(0,this.#a.length)}constructor({proto:e,host:t,port:r},u){super(),e=e||"tcp",t=t||"127.0.0.1",r=r||80,this.#e=e,this.#s=t,this.#n=r,this.addEventListener("open",async()=>{this.#a.forEach(c=>{this.send(c)})}),this.addEventListener("close",()=>{this.#r.length&&this.#a.splice(0,0,this.#r.splice(0,this.#r.length))}),u&&this.connect()}},w,P=(w=class{},s(w,"RawClient",L),w),y=P;let E='<!DOCTYPE html><head><meta charset="utf-8"/><title>WingBlade error</title><style>body{background:#000;color:#ccc;}</style></head><body><div style="width:75vw;min-width:360px;max-width:1080px;margin:0 auto;"><p>WingBlade has encountered an error on ${runtime}.</p><pre>${stackTrace}</pre></div></body>\n';let M=class extends EventTarget{#e;#s;#n=!1;#o=[];#l={open:[],message:[],error:[],close:[]};addEventListener(e,t,r){e=="open"&&this.readyState<2&&t.call(this,new Event("open")),super.addEventListener(e,t,r)}get binaryType(){return this.#e?.binaryType||""}get bufferedAmount(){return this.#e?.bufferedAmount||0}get extensions(){return this.#e?.extensions||""}get readyState(){return this.#e?.readyState||0}get url(){return this.#e?.url||this.#s}attach(e){if(this.#n)return!1;if(this.#e)throw new Error("Already attached a WebSocket object");this.#e=e;let t=this;switch(e.readyState){case 0:case 1:{t.dispatchEvent(new Event("open"));break}case 2:case 3:{t.dispatchEvent(new Event("close"));break}}}close(...e){return this.#n=!0,this.#e?.close(...e)}send(e){return this.#e?this.#e.send(e):(this.#o.push(e),e.length||e.size||e.byteLength||0)}constructor(e){super(),this.#s=e.url.replace("http","ws"),this.addEventListener("open",t=>{for(;this.#o.length>0;)this.#e.send(this.#o.shift())})}},A=class{static serve(e,t={}){let r=`${process.cwd()}`,u=t.port||8e3,c=t.hostname||"0.0.0.0",f=Bun.serve({port:u,hostname:c,fetch:async(n,l)=>{n.socket=l;try{let i=await e(n);return i?.constructor!=Response&&(i=new Response(JSON.stringify(i),{headers:{"Content-Type":"text/plain"}})),i}catch(i){let p=i.stack.split(`
-`);return p.forEach((C,O,$)=>{$[O]=C.replace("@"," at ").replace("[native code]","bun:internal")}),p.unshift(`${i.name||"Error"}${i.message?":":""} ${i.message||""}`),p=p.join(`
-    `),console.error(`Request error at ${n.method} ${n.url}
-${p}`),new Response(E.replace("${runtime}",WingBlade.rt.variant).replace("${stackTrace}",p.replaceAll(r,"wingblade:app")),{status:502,headers:{"Content-Type":"text/html"}})}},websocket:{open(n){let l=n.data.wsServer;l.attach(n),l.dispatchEvent(new Event("open"))},message(n,l){n.data.wsServer.dispatchEvent(new MessageEvent("message",{data:l}))},close(n,l,i){n.data.wsServer.dispatchEvent(new Event("close"))}}});return console.error(`WingBlade serving at http://${c=="0.0.0.0"?"127.0.0.1":c}:${u}`),f}static acceptWs(e,t){let r=new M(e);return e.socket.upgrade(e,{data:{wsServer:r}}),{socket:r,response:new Response(null,{status:200})}}},S=A;let R=class{static randomInt(e){return Math.floor(Math.random()*e)}static async sleep(e,t=0){await Bun.sleep(e+Math.floor(t*Math.random()))}},b=R;let x=function(e){self.navigator||(self.navigator={});let t=navigator;switch(t.userAgent||(t.userAgent=`${e.rt.variant}/${e.rt.version}`),t.language||(t.language=null),t.languages?.constructor||(t.languages=[]),t.hardwareConcurrency||(t.hardwareConcurrency=e.rt.cores),t.deviceMemory||(t.deviceMemory=Math.min(2**Math.round(Math.log2(e.rt.memory.total/1073741824)),8)),t.permissions||(t.permissions={query:r=>e.rt.perms.querySync(r)}),e.rt.variant){case"Node":case"Bun":break;case"Deno":break}};let o,j=(o=class{},s(o,"args",Bun.argv.slice(2)),s(o,"rt",v),s(o,"env",m),s(o,"file",g),s(o,"net",y),s(o,"web",S),s(o,"util",b),o);x(j);export{j as WingBlade};
+"use strict";import os from"node:os";import dns from"node:dns";let __defProp = Object.defineProperty;
+let __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: !0, configurable: !0, writable: !0, value }) : obj[key] = value;
+let __publicField = (obj, key, value) => (__defNormalProp(obj, typeof key != "symbol" ? key + "" : key, value), value);
+
+// src/shared/polyfill.mjs
+let PermissionStatus = class {
+  constructor(name, state = "granted") {
+    if (!name)
+      throw new TypeError(`The provided value "${name}" is not a valid permission name.`);
+    this.name = name, this.state = state;
+  }
+};
+
+// src/bun/system.mjs
+let perms = {
+  query: async (descriptor) => new PermissionStatus(descriptor?.name),
+  request: async (descriptor) => new PermissionStatus(descriptor?.name),
+  revoke: async (descriptor) => new PermissionStatus(descriptor?.name),
+  querySync: (descriptor) => new PermissionStatus(descriptor?.name),
+  requestSync: (descriptor) => new PermissionStatus(descriptor?.name),
+  revokeSync: (descriptor) => new PermissionStatus(descriptor?.name)
+}, _a, rt = (_a = class {
+  static get memory() {
+    let { rss, heapTotal, heapUsed, external } = process.memoryUsage(), total = os.totalmem(), free = os.freemem();
+    return {
+      rss,
+      heapTotal,
+      heapUsed,
+      external,
+      total,
+      free
+    };
+  }
+  static exit(code = 0) {
+    process.exit(code);
+  }
+}, __publicField(_a, "os", process.platform), __publicField(_a, "variant", "Bun"), __publicField(_a, "version", Bun.version), __publicField(_a, "persist", !0), __publicField(_a, "networkDefer", !1), __publicField(_a, "cores", os.cpus().length), __publicField(_a, "perms", perms), _a), envProtected = "delete,get,has,set,toObject".split(","), env = new Proxy({
+  get: (key, fallbackValue) => Bun.env[key] || fallbackValue,
+  set: (key, value) => {
+    Bun.env[key] = value;
+  },
+  delete: (key) => {
+    delete Bun.env[key];
+  },
+  has: (key) => !!Bun.env[key],
+  toObject: () => Bun.env
+}, {
+  get: (target, key) => envProtected.indexOf(key) < 0 && key.constructor == String ? target.get(key) : target[key],
+  set: (target, key, value) => {
+    if (envProtected.indexOf(key) < 0)
+      if (key.constructor == String)
+        target.set(key, value);
+      else
+        throw new TypeError("Invalid type for key");
+    else
+      throw new Error("Tried to write protected properties");
+  },
+  has: (target, key) => envProtected.indexOf(key) < 0 ? key.constructor == String ? target.has(key) : target[key] != null : !1,
+  deleteProperty: (target, key) => {
+    if (envProtected.indexOf(key) < 0)
+      if (key.constructor == String)
+        target.delete(key);
+      else
+        throw new TypeError("Invalid type for key");
+    else
+      throw new Error("Tried to delete protected properties");
+  }
+});
+
+// src/bun/file.mjs
+let file = class {
+  static async read(path, opt) {
+    return new Uint8Array(await Bun.file(path).arrayBuffer());
+  }
+  static async write(path, data, opt) {
+    await Bun.write(path, data);
+  }
+}, file_default = file;
+
+// src/bun/net.mjs
+let RawClient = class extends EventTarget {
+  // onopen, ondata, onclose, onerror
+  #proto;
+  #host;
+  #port;
+  #source;
+  #sink;
+  #controller;
+  #reader;
+  // DefaultReader
+  #writer;
+  // DefaultWriter
+  #queue = [];
+  // Data queue
+  #pool = [];
+  // Stream queue
+  #readyState = 3;
+  #freed = !1;
+  CONNECTING = 0;
+  OPEN = 1;
+  CLOSING = 2;
+  CLOSED = 3;
+  get protocol() {
+    return this.#proto;
+  }
+  get hostname() {
+    return this.#host;
+  }
+  get port() {
+    return this.#port;
+  }
+  get readyState() {
+    return this.#readyState;
+  }
+  get source() {
+    return this.#reader;
+  }
+  get sink() {
+    return this.#writer;
+  }
+  addEventListener(type, handler, opt) {
+    type == "open" && this.readyState == this.OPEN && handler.call(this, new Event("open")), super.addEventListener(type, handler, opt);
+  }
+  send(data) {
+    if (this.#freed)
+      throw new Error("Cannot enqueue or send data on a freed connection");
+    this.#readyState != 1 ? this.#queue.push(data) : this.#writer?.desiredSize < 0 || this.#pool.length ? (this.#pool.push(data), this.#writer.ready.then(() => {
+      let data2 = this.#pool.shift();
+      data2 && this.#writer.write(data2);
+    })) : this.#writer.write(data);
+  }
+  async connect() {
+    if (this.#freed)
+      throw new Error("Cannot restart a freed connection");
+    switch (this.#readyState < this.CLOSING && console.debug(`${this.#proto.toUpperCase()} connection is already open.`), this.#readyState = this.CONNECTING, this.#proto) {
+      case "tcp":
+        break;
+      default:
+        throw this.free(), new Error(`Invalid protocol "${this.#proto}"`);
+    }
+    this.#readyState = this.OPEN, this.dispatchEvent(new Event("open"));
+  }
+  close() {
+    switch (this.#readyState > this.OPEN && console.debug(`${this.#proto.toUpperCase()} connection is already closed.`), this.#readyState = this.CLOSING, this.#proto) {
+      case "tcp":
+        break;
+      default:
+        throw this.free(), new Error(`Invalid protocol "${this.#proto}"`);
+    }
+    this.#readyState = this.CLOSED, this.dispatchEvent(new Event("close"));
+  }
+  free() {
+    return this.close(), this.#freed = !0, this.#queue.splice(0, this.#queue.length);
+  }
+  constructor({ proto, host, port }, immediateConnect) {
+    super(), proto = proto || "tcp", host = host || "127.0.0.1", port = port || 80, this.#proto = proto, this.#host = host, this.#port = port, this.addEventListener("open", async () => {
+      this.#queue.forEach((e) => {
+        this.send(e);
+      });
+    }), this.addEventListener("close", () => {
+      this.#pool.length && this.#queue.splice(0, 0, this.#pool.splice(0, this.#pool.length));
+    }), immediateConnect && this.connect();
+  }
+}, _a2, net = (_a2 = class {
+}, __publicField(_a2, "RawClient", RawClient), _a2), net_default = net;
+
+// src/shared/error.htm
+let error_default = '<!DOCTYPE html><head><meta charset="utf-8"/><title>WingBlade error</title><style>body{background:#000;color:#ccc;}</style></head><body><div style="width:75vw;min-width:360px;max-width:1080px;margin:0 auto;"><p>WingBlade has encountered an error on ${runtime}.</p><pre>${stackTrace}</pre></div></body>\n';
+
+// src/bun/web.mjs
+let WebSocketServer = class extends EventTarget {
+  #attached;
+  #url;
+  #closed = !1;
+  #dataQueue = [];
+  #events = {
+    open: [],
+    message: [],
+    error: [],
+    close: []
+  };
+  addEventListener(type, handler, opt) {
+    type == "open" && this.readyState < 2 && handler.call(this, new Event("open")), super.addEventListener(type, handler, opt);
+  }
+  get binaryType() {
+    return this.#attached?.binaryType || "";
+  }
+  get bufferedAmount() {
+    return this.#attached?.bufferedAmount || 0;
+  }
+  get extensions() {
+    return this.#attached?.extensions || "";
+  }
+  get readyState() {
+    return this.#attached?.readyState || 0;
+  }
+  get url() {
+    return this.#attached?.url || this.#url;
+  }
+  attach(wsService) {
+    if (this.#closed)
+      return !1;
+    if (this.#attached)
+      throw new Error("Already attached a WebSocket object");
+    this.#attached = wsService;
+    let upThis = this;
+    switch (wsService.readyState) {
+      case 0:
+      case 1: {
+        upThis.dispatchEvent(new Event("open"));
+        break;
+      }
+      case 2:
+      case 3: {
+        upThis.dispatchEvent(new Event("close"));
+        break;
+      }
+    }
+  }
+  close(...args) {
+    return this.#closed = !0, this.#attached?.close(...args);
+  }
+  send(data) {
+    return this.#attached ? this.#attached.send(data) : (this.#dataQueue.push(data), data.length || data.size || data.byteLength || 0);
+  }
+  constructor(request) {
+    super(), this.#url = request.url.replace("http", "ws"), this.addEventListener("open", (ev) => {
+      for (; this.#dataQueue.length > 0; )
+        this.#attached.send(this.#dataQueue.shift());
+    });
+  }
+}, web = class {
+  static serve(handler, opt = {}) {
+    let cwdPath = `${process.cwd()}`, port = opt.port || 8e3, hostname = opt.hostname || "0.0.0.0", server = Bun.serve({
+      port,
+      hostname,
+      fetch: async (request, server2) => {
+        request.socket = server2;
+        try {
+          let response = await handler(request);
+          return response?.constructor != Response && (response = new Response(JSON.stringify(response), {
+            headers: {
+              "Content-Type": "text/plain"
+            }
+          })), response;
+        } catch (err) {
+          let errStack = err.stack.split(`
+`);
+          return errStack.forEach((e, i, a) => {
+            a[i] = e.replace("@", " at ").replace("[native code]", "bun:internal");
+          }), errStack.unshift(`${err.name || "Error"}${err.message ? ":" : ""} ${err.message || ""}`), errStack = errStack.join(`
+    `), console.error(`Request error at ${request.method} ${request.url}
+${errStack}`), new Response(error_default.replace("${runtime}", WingBlade.rt.variant).replace("${stackTrace}", errStack.replaceAll(cwdPath, "wingblade:app")), {
+            status: 502,
+            headers: {
+              "Content-Type": "text/html"
+            }
+          });
+        }
+      },
+      websocket: {
+        open(ws) {
+          let wsServer = ws.data.wsServer;
+          wsServer.attach(ws), wsServer.dispatchEvent(new Event("open"));
+        },
+        message(ws, msg) {
+          ws.data.wsServer.dispatchEvent(new MessageEvent("message", { data: msg }));
+        },
+        close(ws, code, msg) {
+          ws.data.wsServer.dispatchEvent(new Event("close"));
+        }
+      }
+    });
+    return console.error(`WingBlade serving at http://${hostname == "0.0.0.0" ? "127.0.0.1" : hostname}:${port}`), server;
+  }
+  static acceptWs(req, opt) {
+    let wsServer = new WebSocketServer(req);
+    return req.socket.upgrade(req, {
+      data: {
+        wsServer
+      }
+    }), {
+      socket: wsServer,
+      response: new Response(null, {
+        status: 200
+      })
+    };
+  }
+}, web_default = web;
+
+// src/bun/util.mjs
+let util = class {
+  static randomInt(cap) {
+    return Math.floor(Math.random() * cap);
+  }
+  static async sleep(ms, maxAdd = 0) {
+    await Bun.sleep(ms + Math.floor(maxAdd * Math.random()));
+  }
+}, util_default = util;
+
+// src/bun/stream.mjs
+if (self.ReadableStream)
+  ReadableStream.prototype.array = function() {
+    return Bun.readableStreamToArray(this);
+  }, ReadableStream.prototype.arrayBuffer = function() {
+    return Bun.readableStreamToArrayBuffer(this);
+  }, ReadableStream.prototype.blob = function() {
+    return Bun.readableStreamToBlob(this);
+  }, ReadableStream.prototype.json = function() {
+    return Bun.readableStreamToJSON(this);
+  }, ReadableStream.prototype.text = function() {
+    return Bun.readableStreamToText(this);
+  };
+else
+  throw "ReadableStream not present in this runtime.";
+
+// src/shared/ext/choker.mjs
+let MiniSignal = class {
+  #resolved = !1;
+  #data;
+  #resolveHandle;
+  resolve(data) {
+    let upThis = this;
+    upThis.resolved || (upThis.#resolved = !0, upThis.#data = data, upThis.#resolveHandle && (upThis.#resolveHandle(data), upThis.#resolveHandle = void 0));
+  }
+  wait() {
+    let upThis = this;
+    return upThis.#resolved ? new Promise((p) => {
+      p(upThis.#data);
+    }) : new Promise((p) => {
+      upThis.#resolveHandle = p;
+    });
+  }
+}, ChokerStream = class {
+  #chunk = 256;
+  #calls = 0;
+  #source;
+  // Stores the original source
+  #reader;
+  // Stores the original reader
+  #sink;
+  // Put the new source here
+  #controller;
+  // Controller of the new source
+  #strategy;
+  // Strategy of the new source
+  #attachSignal = new MiniSignal();
+  alwaysCopy = !1;
+  get chunk() {
+    return this.#chunk;
+  }
+  get sink() {
+    return this.#source;
+  }
+  get source() {
+    return this.#sink;
+  }
+  attach(source) {
+    let upThis = this;
+    upThis.#source = source, upThis.#reader = source.getReader(), upThis.#attachSignal.resolve();
+  }
+  constructor(maxChunkSize = 1024, alwaysCopy = !1) {
+    console.debug("ChokerStream constructing...");
+    let upThis = this;
+    upThis.#chunk = maxChunkSize, upThis.alwaysCopy = alwaysCopy, upThis.#strategy = new ByteLengthQueuingStrategy({
+      highWaterMark: maxChunkSize
+    });
+    let bufferLength = 0, buffer;
+    upThis.#sink = new ReadableStream({
+      cancel: async (reason) => {
+        console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream cancel.`), await upThis.#source.cancel(reason);
+      },
+      start: async (controller) => {
+        upThis.#calls++, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream start.`);
+      },
+      pull: async (controller) => {
+        upThis.#calls++, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream drain.`);
+        let useCopy = !1;
+        console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Waiting for upstream attachment...`), await upThis.#attachSignal.wait(), console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Waiting for upstream data...`);
+        let resume = !0, readBytes = 0;
+        for (; resume && readBytes < upThis.#chunk; ) {
+          let { done, value } = await upThis.#reader.read(), valueSize = value?.byteLength || 0;
+          readBytes += valueSize, console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read ${valueSize} byte(s). Total: ${readBytes} B.`);
+          let flushedBytes = 0, offsetBytes = 0, readView, unfinished = !0;
+          if (value?.byteLength)
+            for (readView = new Uint8Array(value.buffer, value.byteOffset, value.byteLength); unfinished; ) {
+              let commitBuffer;
+              if (readView.byteLength <= flushedBytes + upThis.#chunk && (unfinished = !1), bufferLength) {
+                let flushBuffer = readView.subarray(0, upThis.#chunk - bufferLength);
+                buffer.set(flushBuffer, bufferLength), flushedBytes += flushBuffer.byteLength, bufferLength + readView.byteLength < upThis.#chunk ? (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read window smaller than chunk (${bufferLength} + ${flushBuffer.byteLength}). Writing to cache.`), bufferLength += readView.byteLength) : (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Read window satisfies commit criteria (${bufferLength} + ${readView.byteLength}). Using cached commit buffer.`), commitBuffer = buffer, bufferLength = 0, buffer = new Uint8Array(upThis.#chunk)), readView = readView.subarray(flushBuffer);
+              } else if (!commitBuffer) {
+                if (readView.byteLength < upThis.#chunk)
+                  bufferLength = readView.byteLength, buffer?.constructor != Uint8Array && (buffer = new Uint8Array(upThis.#chunk)), buffer.set(readView);
+                else {
+                  let targetBuffer = readView.subarray(0, upThis.#chunk);
+                  commitBuffer = new Uint8Array(upThis.#chunk), commitBuffer.set(targetBuffer);
+                }
+                readView = readView.subarray(upThis.#chunk);
+              }
+              commitBuffer && controller.enqueue(commitBuffer);
+            }
+          done && (console.debug(`[${upThis.#calls.toString().padStart(4, "0")}] Stream finished.`), bufferLength && controller.enqueue(buffer.subarray(0, bufferLength)), controller.close(), resume = !1);
+        }
+      }
+    }, this.#strategy), console.debug("ChokerStream constructed.");
+  }
+}, choker_default = ChokerStream;
+
+// src/shared/browser.mjs
+let initNavigator = function(WingBlade3) {
+  self.navigator || (self.navigator = {});
+  let navObj = navigator;
+  switch (navObj.userAgent || (navObj.userAgent = `${WingBlade3.rt.variant}/${WingBlade3.rt.version}`), navObj.language || (navObj.language = null), navObj.languages?.constructor || (navObj.languages = []), navObj.hardwareConcurrency || (navObj.hardwareConcurrency = WingBlade3.rt.cores), navObj.deviceMemory || (navObj.deviceMemory = Math.min(2 ** Math.round(Math.log2(WingBlade3.rt.memory.total / 1073741824)), 8)), navObj.permissions || (navObj.permissions = {
+    query: (descriptor) => WingBlade3.rt.perms.querySync(descriptor)
+  }), WingBlade3.rt.variant) {
+    case "Node":
+    case "Bun":
+      break;
+    case "Deno":
+      break;
+  }
+};
+self.ChokerStream = choker_default;
+
+// src/bun/index.mjs
+let _a3, WingBlade2 = (_a3 = class {
+}, __publicField(_a3, "args", Bun.argv.slice(2)), __publicField(_a3, "rt", rt), __publicField(_a3, "env", env), __publicField(_a3, "file", file_default), __publicField(_a3, "net", net_default), __publicField(_a3, "web", web_default), __publicField(_a3, "util", util_default), _a3);
+initNavigator(WingBlade2);
+export {
+  WingBlade2 as WingBlade
+};

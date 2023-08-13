@@ -2,9 +2,9 @@
 mkdir -p dist
 mkdir -p proxy
 # Remove the dev files
-rm -rv dist/*.js
-rm -rv dist/*.mjs
-rm -rv dist/*.map
+rm -rv dist/*.js 2>/dev/null
+rm -rv dist/*.mjs 2>/dev/null
+rm -rv dist/*.map 2>/dev/null
 # Build some files ahead of the time
 #shx live web ${1:---minify} > /dev/null
 #mv proxy/web.js dist/web.js.txt
