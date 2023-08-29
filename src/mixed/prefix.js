@@ -1,0 +1,3 @@
+// Copyright (c) Lightingale WingBlade Author(s) 2023.
+// Licensed under GNU LGPL 3.0 or later.
+"use strict";if(!globalThis.self){globalThis.self=globalThis};if(self.Bun){let a=await import("node:os");let e=await import("node:dns");self.os=a;self.dns=e;}else if(self.Deno){}else{let {WebSocket, WebSocketServer}=await import("ws");let {fetch,Request,Response}=await import("undici");let a=await import("node:os");let b=await import("node:fs");let c=await import("node:http");let d=await import("node:crypto");let e=await import("node:dns");self.WebSocket=WebSocket;self.WebSocketService=WebSocketServer;self.fetch=fetch;self.Request=Request;self.Response=Response;self.os=a;self.fs=b;self.http=c;self.crypto=d;self.dns=e};
