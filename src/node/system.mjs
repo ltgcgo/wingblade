@@ -73,8 +73,10 @@ let rt = class {
 		niList = [];
 		for (let ifname in niMap) {
 			for (let i = 0; i < niMap[ifname].length; i ++) {
-				let e = niMap[ifname][i];
-				let {address, cidr, netmask, family, mac, internal, scope_id} = e;
+				let {address, cidr, netmask, family, mac, internal, scope_id: scopeid} = niMap[ifname][i];
+				if (!mac) {
+					mac = "00:00:00:00:00:00";
+				};
 				niList.push({
 					family,
 					name: ifname,

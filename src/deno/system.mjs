@@ -63,6 +63,28 @@ let rt = class {
 	};
 	static gid = Deno.gid;
 	static hostname = Deno.hostname;
+	static ifMap() {
+		let niMap = {};
+		let niList = Deno.networkInterfaces();
+		for (let i = 0; i < niList.length; i ++) {
+			let {family, name, address, netmask, scopeid: scope_id, cidr, mac} = niList[i];
+			if (!niMap[name]) {
+				niMap[name] = [];
+			};
+			if (mac == "00:00:00:00:00:00") {
+				mac = undefined;
+			};
+			niMap[name].push({
+				address,
+				cidr,
+				netmask,
+				family,
+				mac,
+				scope_id
+			});
+		};
+		return niMap;
+	};
 	static interfaces = Deno.networkInterfaces;
 	static loadavg = Deno.loadavg;
 	static memoryUsage = Deno.memoryUsage;

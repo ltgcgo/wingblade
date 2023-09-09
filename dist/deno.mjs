@@ -38,6 +38,21 @@ let perms = {
   static exit(code = 0) {
     Deno.exit(code);
   }
+  static ifMap() {
+    let niMap = {}, niList = Deno.networkInterfaces();
+    for (let i = 0; i < niList.length; i++) {
+      let { family, name, address, netmask, scopeid: scope_id, cidr, mac } = niList[i];
+      niMap[name] || (niMap[name] = []), mac == "00:00:00:00:00:00" && (mac = void 0), niMap[name].push({
+        address,
+        cidr,
+        netmask,
+        family,
+        mac,
+        scope_id
+      });
+    }
+    return niMap;
+  }
 }, __publicField(_a, "os", Deno.build.os), __publicField(_a, "variant", "Deno"), __publicField(_a, "version", Deno.version.deno), __publicField(_a, "versions", {
   deno: Deno.version.deno,
   v8: Deno.version.v8,

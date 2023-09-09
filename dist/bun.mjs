@@ -54,7 +54,7 @@ let perms = {
     let niMap = os.networkInterfaces(), niList = [];
     for (let ifname in niMap)
       for (let i = 0; i < niMap[ifname].length; i++) {
-        let e = niMap[ifname][i], { address, cidr, netmask, family, mac, internal, scope_id: scopeid } = e;
+        let { address, cidr, netmask, family, mac, internal, scope_id: scopeid } = niMap[ifname][i];
         mac || (mac = "00:00:00:00:00:00"), niList.push({
           family,
           name: ifname,
