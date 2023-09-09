@@ -67,6 +67,31 @@ let rt = class {
 		return os.userInfo().gid;
 	};
 	static hostname = os.hostname;
+	static ifMap = os.networkInterfaces;
+	static interfaces() {
+		let niMap = os.networkInterfaces(),
+		niList = [];
+		for (let ifname in niMap) {
+			for (let i = 0; i < niMap[ifname].length; i ++) {
+				let e = niMap[ifname][i];
+				let {address, cidr, netmask, family, mac, internal, scope_id: scopeid} = e;
+				if (!mac) {
+					mac = "00:00:00:00:00:00";
+				};
+				niList.push({
+					family,
+					name: ifname,
+					address,
+					netmask,
+					scopeid,
+					cidr,
+					mac
+				});
+			};
+		};
+		return niList;
+	};
+	static loadavg = os.loadavg;
 	static memoryUsage = process.memoryUsage;
 	static osUptime = os.uptime;
 	static systemMemoryInfo() {

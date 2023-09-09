@@ -50,6 +50,23 @@ let perms = {
   static gid() {
     return os.userInfo().gid;
   }
+  static interfaces() {
+    let niMap = os.networkInterfaces(), niList = [];
+    for (let ifname in niMap)
+      for (let i = 0; i < niMap[ifname].length; i++) {
+        let e = niMap[ifname][i], { address, cidr, netmask, family, mac, internal, scope_id } = e;
+        niList.push({
+          family,
+          name: ifname,
+          address,
+          netmask,
+          scopeid: scope_id,
+          cidr,
+          mac
+        });
+      }
+    return niList;
+  }
   static systemMemoryInfo() {
     return {
       total: os.totalmem(),
@@ -63,7 +80,7 @@ let perms = {
   deno: "1.36.4",
   v8: process.versions.v8.split("-")[0],
   wingblade: props.version
-}), __publicField(_a, "persist", !0), __publicField(_a, "networkDefer", !1), __publicField(_a, "cores", os.cpus().length), __publicField(_a, "perms", perms), __publicField(_a, "noColor", process.env.NO_COLOR?.length > 0), __publicField(_a, "pid", process.pid), __publicField(_a, "ppid", process.ppid), __publicField(_a, "chdir", process.chdir), __publicField(_a, "cwd", process.cwd), __publicField(_a, "execPath", process.execPath), __publicField(_a, "hostname", os.hostname), __publicField(_a, "memoryUsage", process.memoryUsage), __publicField(_a, "osUptime", os.uptime), _a), envProtected = "delete,get,has,set,toObject".split(","), env = new Proxy({
+}), __publicField(_a, "persist", !0), __publicField(_a, "networkDefer", !1), __publicField(_a, "cores", os.cpus().length), __publicField(_a, "perms", perms), __publicField(_a, "noColor", process.env.NO_COLOR?.length > 0), __publicField(_a, "pid", process.pid), __publicField(_a, "ppid", process.ppid), __publicField(_a, "chdir", process.chdir), __publicField(_a, "cwd", process.cwd), __publicField(_a, "execPath", process.execPath), __publicField(_a, "hostname", os.hostname), __publicField(_a, "ifMap", os.networkInterfaces), __publicField(_a, "loadavg", os.loadavg), __publicField(_a, "memoryUsage", process.memoryUsage), __publicField(_a, "osUptime", os.uptime), _a), envProtected = "delete,get,has,set,toObject".split(","), env = new Proxy({
   get: (key, fallbackValue) => process.env[key] || fallbackValue,
   set: (key, value) => {
     process.env[key] = value;

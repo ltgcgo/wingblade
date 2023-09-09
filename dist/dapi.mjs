@@ -20,7 +20,9 @@ let Deno = {
   exit: WingBlade.rt.exit,
   gid: WingBlade.rt.gid,
   hostname: WingBlade.rt.hostname,
+  loadavg: WingBlade.rt.loadavg,
   memoryUsage: () => WingBlade.rt.memory,
+  networkInterfaces: WingBlade.rt.interfaces,
   osUptime: WingBlade.rt.osUptime,
   systemMemoryInfo: WingBlade.rt.systemMemoryInfo,
   uid: WingBlade.rt.uid

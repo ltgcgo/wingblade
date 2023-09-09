@@ -63,6 +63,8 @@ let rt = class {
 	};
 	static gid = Deno.gid;
 	static hostname = Deno.hostname;
+	static interfaces = Deno.networkInterfaces;
+	static loadavg = Deno.loadavg;
 	static memoryUsage = Deno.memoryUsage;
 	static osUptime = Deno.uptime;
 	static systemMemoryInfo = Deno.systemMemoryInfo;
