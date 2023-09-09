@@ -401,9 +401,9 @@ let MiniSignal = class {
   get source() {
     return this.#sink;
   }
-  attach(source) {
+  attach(source2) {
     let upThis = this;
-    upThis.#source = source, upThis.#reader = source.getReader(), upThis.#attachSignal.resolve();
+    upThis.#source = source2, upThis.#reader = source2.getReader(), upThis.#attachSignal.resolve();
   }
   constructor(maxChunkSize = 1024, alwaysCopy = !1) {
     let upThis = this;
@@ -444,7 +444,7 @@ let MiniSignal = class {
 }, choker_default = ChokerStream;
 
 // src/shared/browser.mjs
-let initNavigator = function(WingBlade3) {
+let initBrowser = function(WingBlade3) {
   self.navigator || (self.navigator = {});
   let navObj = navigator;
   switch (navObj.userAgent || (navObj.userAgent = `${WingBlade3.rt.variant}/${WingBlade3.rt.version}`), navObj.language || (navObj.language = null), navObj.languages?.constructor || (navObj.languages = []), navObj.hardwareConcurrency || (navObj.hardwareConcurrency = WingBlade3.rt.cores), navObj.deviceMemory || (navObj.deviceMemory = Math.min(2 ** Math.round(Math.log2(WingBlade3.rt.memory.total / 1073741824)), 8)), navObj.permissions || (navObj.permissions = {
@@ -456,14 +456,135 @@ let initNavigator = function(WingBlade3) {
     case "Deno":
       break;
   }
+  switch (WingBlade3.rt.variant) {
+    case "Deno": {
+      let WorkerVanilla = Worker;
+      self.Worker = class extends EventTarget {
+        #worker;
+        postMessage(msg, opt) {
+          this.#worker.postMessage(msg, opt);
+        }
+        terminate() {
+          this.#worker.terminate();
+        }
+        constructor(url, opt = {}) {
+          super();
+          let upThis = this;
+          url = new URL(url, `file://${WingBlade3.rt.cwd()}/`).href, (!opt.type || opt.type == "classic") && (opt.type = "module"), upThis.#worker = new WorkerVanilla(url, opt), upThis.#worker.addEventListener("message", ({
+            data,
+            origin: origin2,
+            source: source2,
+            ports: ports2
+          }) => {
+            upThis.dispatchEvent(new MessageEvent("message", {
+              data,
+              origin: origin2,
+              source: source2,
+              ports: ports2
+            }));
+          }), upThis.#worker.addEventListener("error", ({
+            message,
+            filename,
+            lineno,
+            colno,
+            error
+          }) => {
+            upThis.dispatchEvent(new ErrorEvent("error", {
+              message,
+              filename,
+              lineno,
+              colno,
+              error: error || new Error(message, filename, lineno)
+            }));
+          }), upThis.#worker.addEventListener("messageerror", ({ data }) => {
+            upThis.dispatchEvent(new MessageEvent("messageerror", {
+              data,
+              origin,
+              source,
+              ports
+            }));
+          });
+        }
+      };
+      break;
+    }
+    case "Node": {
+      self.Worker = class extends EventTarget {
+        #worker;
+        #elPool = {};
+        addEventListener(type, callback, opt) {
+          let upThis = this, interceptor = function(ev) {
+            if (ev.data?.wbType == "!ErrorEvent") {
+              for (let k in ev.data)
+                k != "wbType" && (ev[k] = ev.data[k]);
+              delete ev.data;
+            }
+            callback.call(upThis, ev);
+          };
+          upThis.#elPool[callback] = interceptor, super.addEventListener(type, interceptor, opt);
+        }
+        postMessage(msg, opt) {
+          this.#worker.postMessage(msg, opt);
+        }
+        terminate() {
+          this.#worker.terminate();
+        }
+        constructor(url, opt = {}) {
+          super();
+          let upThis = this;
+          url = new URL(new URL(url, `file://${WingBlade3.rt.cwd()}/`).href), opt.env = opt.env || workerThreads.SHARE_ENV, upThis.#worker = new workerThreads.Worker(url, opt), upThis.#worker.on("message", (data) => {
+            upThis.dispatchEvent(new MessageEvent("message", {
+              data,
+              origin: url
+            }));
+          }), upThis.#worker.on("error", (err) => {
+            let {
+              message,
+              filename,
+              lineno,
+              colno
+            } = err;
+            upThis.dispatchEvent(new MessageEvent("error", {
+              data: {
+                error: err,
+                message,
+                filename,
+                lineno,
+                colno,
+                wbType: "!ErrorEvent"
+              }
+            }));
+          }), upThis.#worker.on("messageerror", (err) => {
+            upThis.dispatchEvent(new MessageEvent("messageerror", {
+              data: err,
+              origin: url
+            }));
+          });
+        }
+      }, workerThreads.isMainThread || (self.postMessage = function(msg, opt) {
+        workerThreads.parentPort.postMessage(msg, opt);
+      }, self.addEventListener = function(type, callback) {
+        switch (type) {
+          case "message": {
+            workerThreads.parentPort.on("message", (msg) => {
+              callback.call(self, new MessageEvent("message", {
+                data: msg
+              }));
+            });
+            break;
+          }
+        }
+      });
+      break;
+    }
+  }
 };
 self.ChokerStream = choker_default;
 
 // src/bun/index.mjs
-console.debug(props);
 let _a3, WingBlade2 = (_a3 = class {
 }, __publicField(_a3, "args", rootProps.args), __publicField(_a3, "main", rootProps.main), __publicField(_a3, "version", props.version), __publicField(_a3, "rt", rt), __publicField(_a3, "env", env), __publicField(_a3, "file", file_default), __publicField(_a3, "net", net_default), __publicField(_a3, "web", web_default), __publicField(_a3, "util", util_default), _a3);
-initNavigator(WingBlade2);
+initBrowser(WingBlade2);
 export {
   WingBlade2 as WingBlade
 };

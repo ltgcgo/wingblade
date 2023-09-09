@@ -10,10 +10,8 @@ import net from "./net.mjs";
 import web from "./web.mjs";
 import util from "./util.mjs";
 import {} from "./stream.mjs";
-import {initNavigator} from "../shared/browser.mjs";
+import {initBrowser} from "../shared/browser.mjs";
 import {props} from "../shared/props.mjs";
-
-console.debug(props);
 
 let WingBlade = class {
 	static args = rootProps.args;
@@ -27,7 +25,7 @@ let WingBlade = class {
 	static util = util;
 };
 
-initNavigator(WingBlade);
+initBrowser(WingBlade);
 
 export {
 	WingBlade
