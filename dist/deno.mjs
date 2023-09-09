@@ -1,4 +1,755 @@
 // Copyright (c) Lightingale WingBlade Author(s) 2023.
 // Licensed under GNU LGPL 3.0 or later.
-"use strict";let q=Object.defineProperty;let B=(t,e,r)=>e in t?q(t,e,{enumerable:!0,configurable:!0,writable:!0,value:r}):t[e]=r;let a=(t,e,r)=>(B(t,typeof e!="symbol"?e+"":e,r),r);let y={version:"0.1"};let F={query:t=>Deno.permissions.query(t),request:t=>Deno.permissions.request(t),revoke:t=>Deno.permissions.revoke(t),querySync:t=>Deno.permissions.querySync(t),requestSync:t=>Deno.permissions.requestSync(t),revokeSync:t=>Deno.permissions.revokeSync(t)},l,S=(l=class{static get memory(){let{rss:t,heapTotal:e,heapUsed:r,external:s}=Deno.memoryUsage(),{total:n,free:i}=Deno.systemMemoryInfo();return{rss:t,heapTotal:e,heapUsed:r,external:s,total:n,free:i}}static exit(t=0){Deno.exit(t)}},a(l,"os",Deno.build.os),a(l,"variant","Deno"),a(l,"version",Deno.version.deno),a(l,"versions",{deno:Deno.version.deno,v8:Deno.version.v8,wingblade:y.version}),a(l,"persist",!0),a(l,"networkDefer",!1),a(l,"cores",8),a(l,"perms",F),l),v="delete,get,has,set,toObject".split(","),L=new Proxy({get:(t,e)=>Deno.env.get(t)||e,set:(t,e)=>{Deno.env.set(t,e)},delete:t=>{Deno.env.delete(t)},has:t=>Deno.env.has(t),toObject:()=>Deno.env.toObject()},{get:(t,e)=>v.indexOf(e)<0&&e.constructor==String?t.get(e):t[e],set:(t,e,r)=>{if(v.indexOf(e)<0)if(e.constructor==String)t.set(e,r);else throw new TypeError("Invalid type for key");else throw new Error("Tried to write protected properties")},has:(t,e)=>v.indexOf(e)<0?e.constructor==String?t.has(e):t[e]!=null:!1,deleteProperty:(t,e)=>{if(v.indexOf(e)<0)if(e.constructor==String)t.delete(e);else throw new TypeError("Invalid type for key");else throw new Error("Tried to delete protected properties")}});let j=class{static async read(t,e){return await Deno.readFile(t,e)}static async write(t,e,r){await Deno.writeFile(t,e,r)}},C=j;let H=class extends EventTarget{#e;#r;#t;#s;#n;#a;#i;#o;#h=[];#l=[];#c=3;#u=!1;CONNECTING=0;OPEN=1;CLOSING=2;CLOSED=3;get protocol(){return this.#e}get hostname(){return this.#r}get port(){return this.#t}get readyState(){return this.#c}get source(){return this.#i}get sink(){return this.#o}addEventListener(t,e,r){t=="open"&&this.readyState==this.OPEN&&e.call(this,new Event("open")),super.addEventListener(t,e,r)}send(t){if(this.#u)throw new Error("Cannot enqueue or send data on a freed connection");this.#c!=this.OPEN?this.#h.push(t):this.#o?.desiredSize<0||this.#l.length?(this.#l.push(t),this.#o.ready.then(()=>{let e=this.#l.shift();e&&this.#o.write(e)})):this.#o.write(t)}async connect(){if(this.#u)throw new Error("Cannot restart a freed connection");if(this.#c<this.CLOSING){console.debug(`${this.#e.toUpperCase()} connection is already open.`);return}switch(this.#c=this.CONNECTING,this.#e){case"tcp":{let t=await Deno.connect({hostname:this.#r,port:this.#t});this.#s=t,this.#n=t.readable,this.#i=t.readable.getReader(),this.#a=t.writable,this.#o=t.writable.getWriter();break}default:throw this.free(),new Error(`Invalid protocol "${this.#e}"`)}this.#c=this.OPEN,this.dispatchEvent(new Event("open")),(async()=>{try{let t=!0;for(;t;){let{value:e,done:r}=await this.#i.read();t=!r,e&&this.dispatchEvent(new MessageEvent("data",{data:e})),r&&this.close()}}catch(t){this.dispatchEvent(new ErrorEvent("error",{message:t.message,error:t})),this.close()}})()}close(){if(this.#c>this.OPEN){console.debug(`${this.#e.toUpperCase()} connection is already closed.`);return}switch(this.#c=this.CLOSING,this.#e){case"tcp":{let{rid:t}=this.#s;Deno.resources()[t]&&this.#s?.close();break}default:throw new Error(`Invalid protocol "${this.#e}"`)}this.#c=this.CLOSED,this.dispatchEvent(new Event("close"))}free(){return this.close(),this.#u=!0,this.#h.splice(0,this.#h.length)}constructor({proto:t,host:e,port:r},s){super(),t=t||"tcp",e=e||"127.0.0.1",r=r||80,this.#e=t,this.#r=e,this.#t=r,this.addEventListener("open",async()=>{this.#h.forEach(n=>{this.send(n)})}),this.addEventListener("close",()=>{this.#l.length&&this.#h.splice(0,0,this.#l.splice(0,this.#l.length))}),s&&this.connect()}},_=class extends EventTarget{#e;#r;#t;#s;#n;#a;#i=1;OPEN=1;CLOSING=2;CLOSED=3;get ip(){return this.#e.hostname||"0.0.0.0"}get port(){return this.#e.port||0}get readyState(){return this.#i}get source(){return this.#n}get sink(){return this.#a}send(t){this.#i==1&&this.#a.write(t)}close(){this.#i=this.CLOSING,this.#r.close(),this.#i=this.CLOSED,this.dispatchEvent(new Event("close"))}addEventListener(t,e,r){t=="open"&&this.readyState==this.OPEN&&e.call(this,new Event("open")),super.addEventListener(t,e,r)}constructor(t){super(),this.#e=t.remoteAddr,this.#r=t,this.#t=t.readable,this.#n=t.readable.getReader(),this.#s=t.writable,this.#a=t.writable.getWriter(),(async()=>{let e=!0;for(;e;){let{value:r,done:s}=await this.#n.read();e=!s,r&&this.dispatchEvent(new MessageEvent("data",{data:r})),s&&this.close()}})()}},G=class extends EventTarget{#e;#r;#t;#s;#n;#a=!1;#i=!1;get active(){return this.#a}get proto(){return this.#e}get host(){return this.#r}get port(){return this.#t}get reuse(){return this.#s}async listen(){if(this.#i)throw new Error("Cannot restart a freed connection");if(this.#a){console.debug(`${this.#e.toUpperCase()} server on ${this.#r}:${this.#t} is already active.`);return}let t=this;try{switch(this.#e){case"tcp":{t.#n=Deno.listen({hostname:t.#r,port:t.#t,reusePort:t.#s}),t.dispatchEvent(new Event("listen"));for await(let e of t.#n.accept())t.dispatchEvent(new MessageEvent("accept"),{data:new _(e)});break}default:throw t.free(),new Error(`Invalid protocol "${t.#e}"`)}}catch{this.dispatchEvent(new Event("close"))}}close(){if(!this.#a){console.debug(`${this.#e.toUpperCase()} server on ${this.#r}:${this.#t} is already closed.`);return}switch(this.#e){case"tcp":{this.#n?.close();break}}}free(){this.close(),this.#i=!0}constructor({proto:t,host:e,port:r,reuse:s},n){super(),t=t||"tcp",e=e||"0.0.0.0",r=r||8e3,this.#e=t,this.#r=e,this.#t=r,this.#s=s,this.addEventListener("listen",()=>{console.error(`WingBlade ${t.toUpperCase()} server listening on ${e}:${r}`)}),n&&this.listen()}},g,W=(g=class{},a(g,"RawClient",H),a(g,"RawServer",G),g),O=W;function x(){let t,e="pending",r=new Promise((s,n)=>{t={async resolve(i){await i,e="fulfilled",s(i)},reject(i){e="rejected",n(i)}}});return Object.defineProperty(r,"state",{get:()=>e}),Object.assign(r,t)}function Y(t,e={}){let{signal:r,persistent:s}=e;return r?.aborted?Promise.reject(new DOMException("Delay was aborted.","AbortError")):new Promise((n,i)=>{let o=()=>{clearTimeout(f),i(new DOMException("Delay was aborted.","AbortError"))},f=setTimeout(()=>{r?.removeEventListener("abort",o),n()},t);if(r?.addEventListener("abort",o,{once:!0}),s===!1)try{Deno.unrefTimer(f)}catch(p){if(!(p instanceof ReferenceError))throw p;console.error("`persistent` option is only available in Deno")}})}var T=class{#e=0;#r=[];#t=[];#s=x();add(e){++this.#e,this.#n(e[Symbol.asyncIterator]())}async#n(e){try{let{value:r,done:s}=await e.next();s?--this.#e:this.#r.push({iterator:e,value:r})}catch(r){this.#t.push(r)}this.#s.resolve()}async*iterate(){for(;this.#e>0;){await this.#s;for(let e=0;e<this.#r.length;e++){let{iterator:r,value:s}=this.#r[e];yield s,this.#n(r)}if(this.#t.length){for(let e of this.#t)throw e;this.#t.length=0}this.#r.length=0,this.#s=x()}}[Symbol.asyncIterator](){return this.iterate()}},m="Server closed",J=5,K=1e3,E=class{#e;#r;#t;#s=!1;#n=new Set;#a=new AbortController;#i=new Set;#o;constructor(e){this.#e=e.port,this.#r=e.hostname,this.#t=e.handler,this.#o=e.onError??function(r){return console.error(r),new Response("Internal Server Error",{status:500})}}async serve(e){if(this.#s)throw new Deno.errors.Http(m);this.#d(e);try{return await this.#c(e)}finally{this.#f(e);try{e.close()}catch{}}}async listenAndServe(){if(this.#s)throw new Deno.errors.Http(m);let e=Deno.listen({port:this.#e??80,hostname:this.#r??"0.0.0.0",transport:"tcp"});return await this.serve(e)}async listenAndServeTls(e,r){if(this.#s)throw new Deno.errors.Http(m);let s=Deno.listenTls({port:this.#e??443,hostname:this.#r??"0.0.0.0",certFile:e,keyFile:r,transport:"tcp"});return await this.serve(s)}close(){if(this.#s)throw new Deno.errors.Http(m);this.#s=!0;for(let e of this.#n)try{e.close()}catch{}this.#n.clear(),this.#a.abort();for(let e of this.#i)this.#u(e);this.#i.clear()}get closed(){return this.#s}get addrs(){return Array.from(this.#n).map(e=>e.addr)}async#h(e,r){let s;try{if(s=await this.#t(e.request,r),s.bodyUsed&&s.body!==null)throw new TypeError("Response body already consumed.")}catch(n){s=await this.#o(n)}try{await e.respondWith(s)}catch{}}async#l(e,r){for(;!this.#s;){let s;try{s=await e.nextRequest()}catch{break}if(s===null)break;this.#h(s,r)}this.#u(e)}async#c(e){let r;for(;!this.#s;){let s;try{s=await e.accept()}catch(o){if(o instanceof Deno.errors.BadResource||o instanceof Deno.errors.InvalidData||o instanceof Deno.errors.UnexpectedEof||o instanceof Deno.errors.ConnectionReset||o instanceof Deno.errors.NotConnected){r?r*=2:r=J,r>=1e3&&(r=K);try{await Y(r,{signal:this.#a.signal})}catch(d){if(!(d instanceof DOMException&&d.name==="AbortError"))throw d}continue}throw o}r=void 0;let n;try{n=Deno.serveHttp(s)}catch{continue}this.#p(n);let i={localAddr:s.localAddr,remoteAddr:s.remoteAddr};this.#l(n,i)}}#u(e){this.#w(e);try{e.close()}catch{}}#d(e){this.#n.add(e)}#f(e){this.#n.delete(e)}#p(e){this.#i.add(e)}#w(e){this.#i.delete(e)}};function V(t){return t==="0.0.0.0"?"localhost":t}async function k(t,e={}){let r=e.port??8e3,s=e.hostname??"0.0.0.0",n=new E({port:r,hostname:s,handler:t,onError:e.onError});e?.signal?.addEventListener("abort",()=>n.close(),{once:!0});let i=Deno.listen({port:r,hostname:s,transport:"tcp"}),o=n.serve(i);return r=n.addrs[0].port,"onListen"in e?e.onListen?.({port:r,hostname:s}):console.log(`Listening on http://${V(s)}:${r}/`),await o}var A='<!DOCTYPE html><head><meta charset="utf-8"/><title>WingBlade error</title><style>body{background:#000;color:#ccc;}</style></head><body><div style="width:75vw;min-width:360px;max-width:1080px;margin:0 auto;"><p>WingBlade has encountered an error on ${runtime}.</p><pre>${stackTrace}</pre></div></body>\n';let Q=class{static serve(t,e={}){let r=`file://${Deno.cwd()}`;return e?.onListen||(e.onListen=function({port:s,hostname:n}){n=="0.0.0.0"&&(n="127.0.0.1"),console.error(`WingBlade serving at http://${n}:${s}`)}),e?.hostname||(e.hostname="0.0.0.0"),e?.port||(e.port=8e3),k(async(s,n)=>{try{let i=await t(s,n);return i?.constructor==Response?i:new Response(JSON.stringify(i),{headers:{"Content-Type":"text/plain"}})}catch(i){return console.error(`Request error at ${s.method} ${s.url}
-${i.stack}`),new Response(A.replace("${runtime}",WingBlade.rt.variant).replace("${stackTrace}",i.stack.replaceAll(r,"wingblade:app")),{status:502,headers:{"Content-Type":"text/html"}})}},e)}static acceptWs(t,e){return Deno.upgradeWebSocket(t,e)}},R=Q;let X=class{static randomInt(t){return Math.floor(Math.random()*t)}static sleep(t,e=0){return new Promise(r=>{AbortSignal.timeout(t+Math.floor(e*Math.random())).addEventListener("abort",()=>{r()})})}},$=X;if(self.ReadableStream)ReadableStream.prototype.array=async function(){let t=this.getReader(),e=[],r=!0;for(e.byteLength=0;r;){let{done:s,value:n}=await t.read();s&&(r=!1),n?.byteLength&&(e.push(new Uint8Array(n.buffer).subarray(n.byteOffset,n.byteLength)),e.byteLength+=n.byteLength)}return e},ReadableStream.prototype.arrayBuffer=async function(){let t=await this.array(),e=new Uint8Array(t.byteLength),r=0;return t.forEach(s=>{e.set(s,r),r+=s.byteLength}),e.buffer},ReadableStream.prototype.blob=async function(t="application/octet-stream"){return new Blob(await this.array(),{type:t})},ReadableStream.prototype.text=async function(t="utf-8"){let e=await this.arrayBuffer();return new TextDecoder(t,{fatal:!0}).decode(e)},ReadableStream.prototype.json=async function(t){return JSON.parse(await this.text(t))};else throw"ReadableStream not present in this runtime.";let Z=class{#e=!1;#r;#t;resolve(e){let r=this;r.resolved||(r.#e=!0,r.#r=e,r.#t&&(r.#t(e),r.#t=void 0))}wait(){let e=this;return e.#e?new Promise(r=>{r(e.#r)}):new Promise(r=>{e.#t=r})}},ee=class{#e=256;#r=0;#t;#s;#n;#a;#i;#o=new Z;alwaysCopy=!1;get chunk(){return this.#e}get sink(){return this.#t}get source(){return this.#n}attach(e){let r=this;r.#t=e,r.#s=e.getReader(),r.#o.resolve()}constructor(e=1024,r=!1){let s=this;s.#e=e,s.alwaysCopy=r,s.#i=new ByteLengthQueuingStrategy({highWaterMark:e});let n=0,i;s.#n=new ReadableStream({cancel:async o=>{await s.#t.cancel(o)},start:async o=>{},pull:async o=>{s.#r++;let d=!1;await s.#o.wait();let f=!0,p=0;for(;f&&p<s.#e;){let{done:I,value:w}=await s.#s.read(),M=w?.byteLength||0;p+=M;let U=0,c,D=!0;if(w?.byteLength)for(c=new Uint8Array(w.buffer,w.byteOffset,w.byteLength);D;){let u;if(c.byteLength<1&&(D=!1),n){let b=c.subarray(0,s.#e-n);i.set(b,n),n+b.byteLength<s.#e?n+=c.byteLength:(u=i,n=0,i=new Uint8Array(s.#e)),c=c.subarray(b.byteLength)}else c.byteLength<s.#e?(n=c.byteLength,i?.constructor!=Uint8Array&&(i=new Uint8Array(s.#e)),i.set(c)):s.alwaysCopy?(u=new Uint8Array(s.#e),u.set(c.subarray(0,s.#e))):u=c.subarray(0,s.#e),c=c.subarray(s.#e);u&&(o.enqueue(new Uint8Array(u)),U+=u?.byteLength)}I&&(n&&o.enqueue(i.subarray(0,n)),o.close(),f=!1)}}},this.#i)}},N=ee;let P=function(t){self.navigator||(self.navigator={});let e=navigator;switch(e.userAgent||(e.userAgent=`${t.rt.variant}/${t.rt.version}`),e.language||(e.language=null),e.languages?.constructor||(e.languages=[]),e.hardwareConcurrency||(e.hardwareConcurrency=t.rt.cores),e.deviceMemory||(e.deviceMemory=Math.min(2**Math.round(Math.log2(t.rt.memory.total/1073741824)),8)),e.permissions||(e.permissions={query:r=>t.rt.perms.querySync(r)}),t.rt.variant){case"Node":case"Bun":break;case"Deno":break}};self.ChokerStream=N;let h,te=(h=class{},a(h,"args",Deno.args),a(h,"version",y.version),a(h,"rt",S),a(h,"env",L),a(h,"file",C),a(h,"net",O),a(h,"web",R),a(h,"util",$),h);P(te);export{te as WingBlade};
+"use strict";let __defProp = Object.defineProperty;
+let __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: !0, configurable: !0, writable: !0, value }) : obj[key] = value;
+let __publicField = (obj, key, value) => (__defNormalProp(obj, typeof key != "symbol" ? key + "" : key, value), value);
+
+// src/deno/root.mjs
+let rootProps = {
+  args: Deno.args,
+  main: Deno.mainModule
+};
+
+// src/shared/props.mjs
+let props = {
+  version: "0.1"
+};
+
+// src/deno/system.mjs
+let perms = {
+  query: (descriptor) => Deno.permissions.query(descriptor),
+  request: (descriptor) => Deno.permissions.request(descriptor),
+  revoke: (descriptor) => Deno.permissions.revoke(descriptor),
+  querySync: (descriptor) => Deno.permissions.querySync(descriptor),
+  requestSync: (descriptor) => Deno.permissions.requestSync(descriptor),
+  revokeSync: (descriptor) => Deno.permissions.revokeSync(descriptor)
+}, _a, rt = (_a = class {
+  static get memory() {
+    let { rss, heapTotal, heapUsed, external } = Deno.memoryUsage(), { total, free } = Deno.systemMemoryInfo();
+    return {
+      rss,
+      heapTotal,
+      heapUsed,
+      external,
+      total,
+      free
+    };
+  }
+  static exit(code = 0) {
+    Deno.exit(code);
+  }
+}, __publicField(_a, "os", Deno.build.os), __publicField(_a, "variant", "Deno"), __publicField(_a, "version", Deno.version.deno), __publicField(_a, "versions", {
+  deno: Deno.version.deno,
+  v8: Deno.version.v8,
+  wingblade: props.version
+}), __publicField(_a, "persist", !0), __publicField(_a, "networkDefer", !1), __publicField(_a, "cores", 8), __publicField(_a, "perms", perms), __publicField(_a, "noColor", Deno.noColor), __publicField(_a, "pid", Deno.pid), __publicField(_a, "ppid", Deno.ppid), __publicField(_a, "chdir", Deno.chdir), __publicField(_a, "cwd", Deno.cwd), __publicField(_a, "execPath", Deno.execPath()), __publicField(_a, "gid", Deno.gid), __publicField(_a, "hostname", Deno.hostname), __publicField(_a, "memoryUsage", Deno.memoryUsage), __publicField(_a, "osUptime", Deno.uptime), __publicField(_a, "systemMemoryInfo", Deno.systemMemoryInfo), __publicField(_a, "uid", Deno.uid), _a), envProtected = "delete,get,has,set,toObject".split(","), env = new Proxy({
+  get: (key, fallbackValue) => Deno.env.get(key) || fallbackValue,
+  set: (key, value) => {
+    Deno.env.set(key, value);
+  },
+  delete: (key) => {
+    Deno.env.delete(key);
+  },
+  has: (key) => Deno.env.has(key),
+  toObject: () => Deno.env.toObject()
+}, {
+  get: (target, key) => envProtected.indexOf(key) < 0 && key.constructor == String ? target.get(key) : target[key],
+  set: (target, key, value) => {
+    if (envProtected.indexOf(key) < 0)
+      if (key.constructor == String)
+        target.set(key, value);
+      else
+        throw new TypeError("Invalid type for key");
+    else
+      throw new Error("Tried to write protected properties");
+  },
+  has: (target, key) => envProtected.indexOf(key) < 0 ? key.constructor == String ? target.has(key) : target[key] != null : !1,
+  deleteProperty: (target, key) => {
+    if (envProtected.indexOf(key) < 0)
+      if (key.constructor == String)
+        target.delete(key);
+      else
+        throw new TypeError("Invalid type for key");
+    else
+      throw new Error("Tried to delete protected properties");
+  }
+});
+
+// src/deno/file.mjs
+let file = class {
+  static async read(path, opt) {
+    return await Deno.readFile(path, opt);
+  }
+  static async write(path, data, opt) {
+    await Deno.writeFile(path, data, opt);
+  }
+}, file_default = file;
+
+// src/deno/net.mjs
+let RawClient = class extends EventTarget {
+  // onopen, ondata, onclose, onerror
+  #proto;
+  #host;
+  #port;
+  #controller;
+  #source;
+  #sink;
+  #reader;
+  // DefaultReader
+  #writer;
+  // DefaultWriter
+  #queue = [];
+  // Data queue
+  #pool = [];
+  // Stream queue
+  #readyState = 3;
+  #freed = !1;
+  CONNECTING = 0;
+  OPEN = 1;
+  CLOSING = 2;
+  CLOSED = 3;
+  get protocol() {
+    return this.#proto;
+  }
+  get hostname() {
+    return this.#host;
+  }
+  get port() {
+    return this.#port;
+  }
+  get readyState() {
+    return this.#readyState;
+  }
+  get source() {
+    return this.#reader;
+  }
+  get sink() {
+    return this.#writer;
+  }
+  addEventListener(type, handler, opt) {
+    type == "open" && this.readyState == this.OPEN && handler.call(this, new Event("open")), super.addEventListener(type, handler, opt);
+  }
+  send(data) {
+    if (this.#freed)
+      throw new Error("Cannot enqueue or send data on a freed connection");
+    this.#readyState != this.OPEN ? this.#queue.push(data) : this.#writer?.desiredSize < 0 || this.#pool.length ? (this.#pool.push(data), this.#writer.ready.then(() => {
+      let data2 = this.#pool.shift();
+      data2 && this.#writer.write(data2);
+    })) : this.#writer.write(data);
+  }
+  async connect() {
+    if (this.#freed)
+      throw new Error("Cannot restart a freed connection");
+    if (this.#readyState < this.CLOSING) {
+      console.debug(`${this.#proto.toUpperCase()} connection is already open.`);
+      return;
+    }
+    switch (this.#readyState = this.CONNECTING, this.#proto) {
+      case "tcp": {
+        let conn = await Deno.connect({ hostname: this.#host, port: this.#port });
+        this.#controller = conn, this.#source = conn.readable, this.#reader = conn.readable.getReader(), this.#sink = conn.writable, this.#writer = conn.writable.getWriter();
+        break;
+      }
+      default:
+        throw this.free(), new Error(`Invalid protocol "${this.#proto}"`);
+    }
+    this.#readyState = this.OPEN, this.dispatchEvent(new Event("open")), (async () => {
+      try {
+        let alive = !0;
+        for (; alive; ) {
+          let { value, done } = await this.#reader.read();
+          alive = !done, value && this.dispatchEvent(new MessageEvent("data", { data: value })), done && this.close();
+        }
+      } catch (err) {
+        this.dispatchEvent(new ErrorEvent("error", {
+          message: err.message,
+          error: err
+        })), this.close();
+      }
+    })();
+  }
+  close() {
+    if (this.#readyState > this.OPEN) {
+      console.debug(`${this.#proto.toUpperCase()} connection is already closed.`);
+      return;
+    }
+    switch (this.#readyState = this.CLOSING, this.#proto) {
+      case "tcp": {
+        let { rid } = this.#controller;
+        Deno.resources()[rid] && this.#controller?.close();
+        break;
+      }
+      default:
+        throw new Error(`Invalid protocol "${this.#proto}"`);
+    }
+    this.#readyState = this.CLOSED, this.dispatchEvent(new Event("close"));
+  }
+  free() {
+    return this.close(), this.#freed = !0, this.#queue.splice(0, this.#queue.length);
+  }
+  constructor({ proto, host, port }, immediate) {
+    super(), proto = proto || "tcp", host = host || "127.0.0.1", port = port || 80, this.#proto = proto, this.#host = host, this.#port = port, this.addEventListener("open", async () => {
+      this.#queue.forEach((e) => {
+        this.send(e);
+      });
+    }), this.addEventListener("close", () => {
+      this.#pool.length && this.#queue.splice(0, 0, this.#pool.splice(0, this.#pool.length));
+    }), immediate && this.connect();
+  }
+}, RawServerSocket = class extends EventTarget {
+  // onopen, ondata, onclose, onerror
+  #clientAddr;
+  #controller;
+  #source;
+  #sink;
+  #reader;
+  // DefaultReader
+  #writer;
+  // DefaultWriter
+  #readyState = 1;
+  OPEN = 1;
+  CLOSING = 2;
+  CLOSED = 3;
+  get ip() {
+    return this.#clientAddr.hostname || "0.0.0.0";
+  }
+  get port() {
+    return this.#clientAddr.port || 0;
+  }
+  get readyState() {
+    return this.#readyState;
+  }
+  get source() {
+    return this.#reader;
+  }
+  get sink() {
+    return this.#writer;
+  }
+  send(data) {
+    this.#readyState == 1 && this.#writer.write(data);
+  }
+  close() {
+    this.#readyState = this.CLOSING, this.#controller.close(), this.#readyState = this.CLOSED, this.dispatchEvent(new Event("close"));
+  }
+  addEventListener(type, handler, opt) {
+    type == "open" && this.readyState == this.OPEN && handler.call(this, new Event("open")), super.addEventListener(type, handler, opt);
+  }
+  constructor(denoConn) {
+    super(), this.#clientAddr = denoConn.remoteAddr, this.#controller = denoConn, this.#source = denoConn.readable, this.#reader = denoConn.readable.getReader(), this.#sink = denoConn.writable, this.#writer = denoConn.writable.getWriter(), (async () => {
+      let alive = !0;
+      for (; alive; ) {
+        let { value, done } = await this.#reader.read();
+        alive = !done, value && this.dispatchEvent(new MessageEvent("data", { data: value })), done && this.close();
+      }
+    })();
+  }
+}, RawServer = class extends EventTarget {
+  // onlisten, onaccept, onclose, onerror
+  #proto;
+  #host;
+  #port;
+  #reuse;
+  #controller;
+  #active = !1;
+  #freed = !1;
+  get active() {
+    return this.#active;
+  }
+  get proto() {
+    return this.#proto;
+  }
+  get host() {
+    return this.#host;
+  }
+  get port() {
+    return this.#port;
+  }
+  get reuse() {
+    return this.#reuse;
+  }
+  async listen() {
+    if (this.#freed)
+      throw new Error("Cannot restart a freed connection");
+    if (this.#active) {
+      console.debug(`${this.#proto.toUpperCase()} server on ${this.#host}:${this.#port} is already active.`);
+      return;
+    }
+    let upThis = this;
+    try {
+      switch (this.#proto) {
+        case "tcp": {
+          upThis.#controller = Deno.listen({
+            hostname: upThis.#host,
+            port: upThis.#port,
+            reusePort: upThis.#reuse
+          }), upThis.dispatchEvent(new Event("listen"));
+          for await (let conn of upThis.#controller.accept())
+            upThis.dispatchEvent(new MessageEvent("accept"), { data: new RawServerSocket(conn) });
+          break;
+        }
+        default:
+          throw upThis.free(), new Error(`Invalid protocol "${upThis.#proto}"`);
+      }
+    } catch {
+      this.dispatchEvent(new Event("close"));
+    }
+  }
+  close() {
+    if (!this.#active) {
+      console.debug(`${this.#proto.toUpperCase()} server on ${this.#host}:${this.#port} is already closed.`);
+      return;
+    }
+    switch (this.#proto) {
+      case "tcp": {
+        this.#controller?.close();
+        break;
+      }
+    }
+  }
+  free() {
+    this.close(), this.#freed = !0;
+  }
+  constructor({ proto, host, port, reuse }, immediate) {
+    super(), proto = proto || "tcp", host = host || "0.0.0.0", port = port || 8e3, this.#proto = proto, this.#host = host, this.#port = port, this.#reuse = reuse, this.addEventListener("listen", () => {
+      console.error(`WingBlade ${proto.toUpperCase()} server listening on ${host}:${port}`);
+    }), immediate && this.listen();
+  }
+}, _a2, net = (_a2 = class {
+}, __publicField(_a2, "RawClient", RawClient), __publicField(_a2, "RawServer", RawServer), _a2), net_default = net;
+
+// libs/denoServe/server.js
+function deferred() {
+  let methods, state = "pending", promise = new Promise((resolve, reject) => {
+    methods = {
+      async resolve(value) {
+        await value, state = "fulfilled", resolve(value);
+      },
+      reject(reason) {
+        state = "rejected", reject(reason);
+      }
+    };
+  });
+  return Object.defineProperty(promise, "state", {
+    get: () => state
+  }), Object.assign(promise, methods);
+}
+function delay(ms, options = {}) {
+  let { signal, persistent } = options;
+  return signal?.aborted ? Promise.reject(new DOMException("Delay was aborted.", "AbortError")) : new Promise((resolve, reject) => {
+    let abort = () => {
+      clearTimeout(i), reject(new DOMException("Delay was aborted.", "AbortError"));
+    }, i = setTimeout(() => {
+      signal?.removeEventListener("abort", abort), resolve();
+    }, ms);
+    if (signal?.addEventListener("abort", abort, {
+      once: !0
+    }), persistent === !1)
+      try {
+        Deno.unrefTimer(i);
+      } catch (error) {
+        if (!(error instanceof ReferenceError))
+          throw error;
+        console.error("`persistent` option is only available in Deno");
+      }
+  });
+}
+let MuxAsyncIterator = class {
+  #iteratorCount = 0;
+  #yields = [];
+  #throws = [];
+  #signal = deferred();
+  add(iterable) {
+    ++this.#iteratorCount, this.#callIteratorNext(iterable[Symbol.asyncIterator]());
+  }
+  async #callIteratorNext(iterator) {
+    try {
+      let { value, done } = await iterator.next();
+      done ? --this.#iteratorCount : this.#yields.push({
+        iterator,
+        value
+      });
+    } catch (e) {
+      this.#throws.push(e);
+    }
+    this.#signal.resolve();
+  }
+  async *iterate() {
+    for (; this.#iteratorCount > 0; ) {
+      await this.#signal;
+      for (let i = 0; i < this.#yields.length; i++) {
+        let { iterator, value } = this.#yields[i];
+        yield value, this.#callIteratorNext(iterator);
+      }
+      if (this.#throws.length) {
+        for (let e of this.#throws)
+          throw e;
+        this.#throws.length = 0;
+      }
+      this.#yields.length = 0, this.#signal = deferred();
+    }
+  }
+  [Symbol.asyncIterator]() {
+    return this.iterate();
+  }
+}, ERROR_SERVER_CLOSED = "Server closed", INITIAL_ACCEPT_BACKOFF_DELAY = 5, MAX_ACCEPT_BACKOFF_DELAY = 1e3, Server = class {
+  #port;
+  #host;
+  #handler;
+  #closed = !1;
+  #listeners = /* @__PURE__ */ new Set();
+  #acceptBackoffDelayAbortController = new AbortController();
+  #httpConnections = /* @__PURE__ */ new Set();
+  #onError;
+  constructor(serverInit) {
+    this.#port = serverInit.port, this.#host = serverInit.hostname, this.#handler = serverInit.handler, this.#onError = serverInit.onError ?? function(error) {
+      return console.error(error), new Response("Internal Server Error", {
+        status: 500
+      });
+    };
+  }
+  async serve(listener) {
+    if (this.#closed)
+      throw new Deno.errors.Http(ERROR_SERVER_CLOSED);
+    this.#trackListener(listener);
+    try {
+      return await this.#accept(listener);
+    } finally {
+      this.#untrackListener(listener);
+      try {
+        listener.close();
+      } catch {
+      }
+    }
+  }
+  async listenAndServe() {
+    if (this.#closed)
+      throw new Deno.errors.Http(ERROR_SERVER_CLOSED);
+    let listener = Deno.listen({
+      port: this.#port ?? 80,
+      hostname: this.#host ?? "0.0.0.0",
+      transport: "tcp"
+    });
+    return await this.serve(listener);
+  }
+  async listenAndServeTls(certFile, keyFile) {
+    if (this.#closed)
+      throw new Deno.errors.Http(ERROR_SERVER_CLOSED);
+    let listener = Deno.listenTls({
+      port: this.#port ?? 443,
+      hostname: this.#host ?? "0.0.0.0",
+      certFile,
+      keyFile,
+      transport: "tcp"
+    });
+    return await this.serve(listener);
+  }
+  close() {
+    if (this.#closed)
+      throw new Deno.errors.Http(ERROR_SERVER_CLOSED);
+    this.#closed = !0;
+    for (let listener of this.#listeners)
+      try {
+        listener.close();
+      } catch {
+      }
+    this.#listeners.clear(), this.#acceptBackoffDelayAbortController.abort();
+    for (let httpConn of this.#httpConnections)
+      this.#closeHttpConn(httpConn);
+    this.#httpConnections.clear();
+  }
+  get closed() {
+    return this.#closed;
+  }
+  get addrs() {
+    return Array.from(this.#listeners).map((listener) => listener.addr);
+  }
+  async #respond(requestEvent, connInfo) {
+    let response;
+    try {
+      if (response = await this.#handler(requestEvent.request, connInfo), response.bodyUsed && response.body !== null)
+        throw new TypeError("Response body already consumed.");
+    } catch (error) {
+      response = await this.#onError(error);
+    }
+    try {
+      await requestEvent.respondWith(response);
+    } catch {
+    }
+  }
+  async #serveHttp(httpConn, connInfo) {
+    for (; !this.#closed; ) {
+      let requestEvent;
+      try {
+        requestEvent = await httpConn.nextRequest();
+      } catch {
+        break;
+      }
+      if (requestEvent === null)
+        break;
+      this.#respond(requestEvent, connInfo);
+    }
+    this.#closeHttpConn(httpConn);
+  }
+  async #accept(listener) {
+    let acceptBackoffDelay;
+    for (; !this.#closed; ) {
+      let conn;
+      try {
+        conn = await listener.accept();
+      } catch (error) {
+        if (error instanceof Deno.errors.BadResource || error instanceof Deno.errors.InvalidData || error instanceof Deno.errors.UnexpectedEof || error instanceof Deno.errors.ConnectionReset || error instanceof Deno.errors.NotConnected) {
+          acceptBackoffDelay ? acceptBackoffDelay *= 2 : acceptBackoffDelay = INITIAL_ACCEPT_BACKOFF_DELAY, acceptBackoffDelay >= 1e3 && (acceptBackoffDelay = MAX_ACCEPT_BACKOFF_DELAY);
+          try {
+            await delay(acceptBackoffDelay, {
+              signal: this.#acceptBackoffDelayAbortController.signal
+            });
+          } catch (err) {
+            if (!(err instanceof DOMException && err.name === "AbortError"))
+              throw err;
+          }
+          continue;
+        }
+        throw error;
+      }
+      acceptBackoffDelay = void 0;
+      let httpConn;
+      try {
+        httpConn = Deno.serveHttp(conn);
+      } catch {
+        continue;
+      }
+      this.#trackHttpConnection(httpConn);
+      let connInfo = {
+        localAddr: conn.localAddr,
+        remoteAddr: conn.remoteAddr
+      };
+      this.#serveHttp(httpConn, connInfo);
+    }
+  }
+  #closeHttpConn(httpConn) {
+    this.#untrackHttpConnection(httpConn);
+    try {
+      httpConn.close();
+    } catch {
+    }
+  }
+  #trackListener(listener) {
+    this.#listeners.add(listener);
+  }
+  #untrackListener(listener) {
+    this.#listeners.delete(listener);
+  }
+  #trackHttpConnection(httpConn) {
+    this.#httpConnections.add(httpConn);
+  }
+  #untrackHttpConnection(httpConn) {
+    this.#httpConnections.delete(httpConn);
+  }
+};
+function hostnameForDisplay(hostname) {
+  return hostname === "0.0.0.0" ? "localhost" : hostname;
+}
+async function serve(handler, options = {}) {
+  let port = options.port ?? 8e3, hostname = options.hostname ?? "0.0.0.0", server = new Server({
+    port,
+    hostname,
+    handler,
+    onError: options.onError
+  });
+  options?.signal?.addEventListener("abort", () => server.close(), {
+    once: !0
+  });
+  let listener = Deno.listen({
+    port,
+    hostname,
+    transport: "tcp"
+  }), s = server.serve(listener);
+  return port = server.addrs[0].port, "onListen" in options ? options.onListen?.({
+    port,
+    hostname
+  }) : console.log(`Listening on http://${hostnameForDisplay(hostname)}:${port}/`), await s;
+}
+
+// src/shared/error.htm
+let error_default = '<!DOCTYPE html><head><meta charset="utf-8"/><title>WingBlade error</title><style>body{background:#000;color:#ccc;}</style></head><body><div style="width:75vw;min-width:360px;max-width:1080px;margin:0 auto;"><p>WingBlade has encountered an error on ${runtime}.</p><pre>${stackTrace}</pre></div></body>\n';
+
+// src/deno/web.mjs
+let web = class {
+  static serve(handler, opt = {}) {
+    let cwdPath = `file://${Deno.cwd()}`;
+    return opt?.onListen || (opt.onListen = function({ port, hostname }) {
+      hostname == "0.0.0.0" && (hostname = "127.0.0.1"), console.error(`WingBlade serving at http://${hostname}:${port}`);
+    }), opt?.hostname || (opt.hostname = "0.0.0.0"), opt?.port || (opt.port = 8e3), serve(async (request, connInfo) => {
+      try {
+        let response = await handler(request, connInfo);
+        return response?.constructor == Response ? response : new Response(JSON.stringify(response), {
+          headers: {
+            "Content-Type": "text/plain"
+          }
+        });
+      } catch (err) {
+        return console.error(`Request error at ${request.method} ${request.url}
+${err.stack}`), new Response(error_default.replace("${runtime}", WingBlade.rt.variant).replace("${stackTrace}", err.stack.replaceAll(cwdPath, "wingblade:app")), {
+          status: 502,
+          headers: {
+            "Content-Type": "text/html"
+          }
+        });
+      }
+    }, opt);
+  }
+  static acceptWs(req, opt) {
+    return Deno.upgradeWebSocket(req, opt);
+  }
+}, web_default = web;
+
+// src/deno/util.mjs
+let util = class {
+  static randomInt(cap) {
+    return Math.floor(Math.random() * cap);
+  }
+  static sleep(ms, maxAdd = 0) {
+    return new Promise((y) => {
+      AbortSignal.timeout(ms + Math.floor(maxAdd * Math.random())).addEventListener("abort", () => {
+        y();
+      });
+    });
+  }
+}, util_default = util;
+
+// src/deno/stream.mjs
+if (self.ReadableStream)
+  ReadableStream.prototype.array = async function() {
+    let reader = this.getReader(), bufferList = [], resume = !0;
+    for (bufferList.byteLength = 0; resume; ) {
+      let { done, value } = await reader.read();
+      done && (resume = !1), value?.byteLength && (bufferList.push(new Uint8Array(value.buffer).subarray(value.byteOffset, value.byteLength)), bufferList.byteLength += value.byteLength);
+    }
+    return bufferList;
+  }, ReadableStream.prototype.arrayBuffer = async function() {
+    let bufferList = await this.array(), newBuffer = new Uint8Array(bufferList.byteLength), offset = 0;
+    return bufferList.forEach((e) => {
+      newBuffer.set(e, offset), offset += e.byteLength;
+    }), newBuffer.buffer;
+  }, ReadableStream.prototype.blob = async function(type = "application/octet-stream") {
+    return new Blob(await this.array(), {
+      type
+    });
+  }, ReadableStream.prototype.text = async function(encoding = "utf-8") {
+    let buffer = await this.arrayBuffer();
+    return new TextDecoder(encoding, {
+      fatal: !0
+    }).decode(buffer);
+  }, ReadableStream.prototype.json = async function(encoding) {
+    return JSON.parse(await this.text(encoding));
+  };
+else
+  throw "ReadableStream not present in this runtime.";
+
+// src/shared/ext/choker.mjs
+let MiniSignal = class {
+  #resolved = !1;
+  #data;
+  #resolveHandle;
+  resolve(data) {
+    let upThis = this;
+    upThis.resolved || (upThis.#resolved = !0, upThis.#data = data, upThis.#resolveHandle && (upThis.#resolveHandle(data), upThis.#resolveHandle = void 0));
+  }
+  wait() {
+    let upThis = this;
+    return upThis.#resolved ? new Promise((p) => {
+      p(upThis.#data);
+    }) : new Promise((p) => {
+      upThis.#resolveHandle = p;
+    });
+  }
+}, ChokerStream = class {
+  #chunk = 256;
+  #calls = 0;
+  #source;
+  // Stores the original source
+  #reader;
+  // Stores the original reader
+  #sink;
+  // Put the new source here
+  #controller;
+  // Controller of the new source
+  #strategy;
+  // Strategy of the new source
+  #attachSignal = new MiniSignal();
+  alwaysCopy = !1;
+  get chunk() {
+    return this.#chunk;
+  }
+  get sink() {
+    return this.#source;
+  }
+  get source() {
+    return this.#sink;
+  }
+  attach(source) {
+    let upThis = this;
+    upThis.#source = source, upThis.#reader = source.getReader(), upThis.#attachSignal.resolve();
+  }
+  constructor(maxChunkSize = 1024, alwaysCopy = !1) {
+    let upThis = this;
+    upThis.#chunk = maxChunkSize, upThis.alwaysCopy = alwaysCopy, upThis.#strategy = new ByteLengthQueuingStrategy({
+      highWaterMark: maxChunkSize
+    });
+    let bufferLength = 0, buffer;
+    upThis.#sink = new ReadableStream({
+      cancel: async (reason) => {
+        await upThis.#source.cancel(reason);
+      },
+      start: async (controller) => {
+      },
+      pull: async (controller) => {
+        upThis.#calls++;
+        let useCopy = !1;
+        await upThis.#attachSignal.wait();
+        let resume = !0, readBytes = 0;
+        for (; resume && readBytes < upThis.#chunk; ) {
+          let { done, value } = await upThis.#reader.read(), valueSize = value?.byteLength || 0;
+          readBytes += valueSize;
+          let realOffset = 0, readView, unfinished = !0;
+          if (value?.byteLength)
+            for (readView = new Uint8Array(value.buffer, value.byteOffset, value.byteLength); unfinished; ) {
+              let commitBuffer;
+              if (readView.byteLength < 1 && (unfinished = !1), bufferLength) {
+                let flushBuffer = readView.subarray(0, upThis.#chunk - bufferLength);
+                buffer.set(flushBuffer, bufferLength), bufferLength + flushBuffer.byteLength < upThis.#chunk ? bufferLength += readView.byteLength : (commitBuffer = buffer, bufferLength = 0, buffer = new Uint8Array(upThis.#chunk)), readView = readView.subarray(flushBuffer.byteLength);
+              } else
+                readView.byteLength < upThis.#chunk ? (bufferLength = readView.byteLength, buffer?.constructor != Uint8Array && (buffer = new Uint8Array(upThis.#chunk)), buffer.set(readView)) : upThis.alwaysCopy ? (commitBuffer = new Uint8Array(upThis.#chunk), commitBuffer.set(readView.subarray(0, upThis.#chunk))) : commitBuffer = readView.subarray(0, upThis.#chunk), readView = readView.subarray(upThis.#chunk);
+              commitBuffer && (controller.enqueue(new Uint8Array(commitBuffer)), realOffset += commitBuffer?.byteLength);
+            }
+          done && (bufferLength && controller.enqueue(buffer.subarray(0, bufferLength)), controller.close(), resume = !1);
+        }
+      }
+    }, this.#strategy);
+  }
+}, choker_default = ChokerStream;
+
+// src/shared/browser.mjs
+let initNavigator = function(WingBlade3) {
+  self.navigator || (self.navigator = {});
+  let navObj = navigator;
+  switch (navObj.userAgent || (navObj.userAgent = `${WingBlade3.rt.variant}/${WingBlade3.rt.version}`), navObj.language || (navObj.language = null), navObj.languages?.constructor || (navObj.languages = []), navObj.hardwareConcurrency || (navObj.hardwareConcurrency = WingBlade3.rt.cores), navObj.deviceMemory || (navObj.deviceMemory = Math.min(2 ** Math.round(Math.log2(WingBlade3.rt.memory.total / 1073741824)), 8)), navObj.permissions || (navObj.permissions = {
+    query: (descriptor) => WingBlade3.rt.perms.querySync(descriptor)
+  }), WingBlade3.rt.variant) {
+    case "Node":
+    case "Bun":
+      break;
+    case "Deno":
+      break;
+  }
+};
+self.ChokerStream = choker_default;
+
+// src/deno/index.mjs
+console.debug(props);
+let _a3, WingBlade2 = (_a3 = class {
+}, __publicField(_a3, "args", rootProps.args), __publicField(_a3, "main", rootProps.main), __publicField(_a3, "version", props.version), __publicField(_a3, "rt", rt), __publicField(_a3, "env", env), __publicField(_a3, "file", file_default), __publicField(_a3, "net", net_default), __publicField(_a3, "web", web_default), __publicField(_a3, "util", util_default), _a3);
+initNavigator(WingBlade2);
+export {
+  WingBlade2 as WingBlade
+};

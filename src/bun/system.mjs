@@ -4,6 +4,7 @@
 "use strict";
 
 import {PermissionStatus} from "../shared/polyfill.mjs";
+import {props} from "../shared/props.mjs";
 
 let perms = {
 	"query": async (descriptor) => {
@@ -32,7 +33,7 @@ let rt = class {
 	static variant = "Bun";
 	static version = Bun.version;
 	static versions = {
-		"deno": process.versions.node,
+		"deno": "1.36.4",
 		"v8": process.versions.v8.split("-")[0],
 		"wingblade": props.version
 	};
@@ -40,6 +41,9 @@ let rt = class {
 	static networkDefer = false;
 	static cores = os.cpus().length;
 	static perms = perms;
+	static noColor = process.env["NO_COLOR"]?.length > 0;
+	static pid = process.pid;
+	static ppid = process.ppid;
 	static get memory() {
 		let {rss, heapTotal, heapUsed, external} = process.memoryUsage();
 		let total = os.totalmem();
@@ -53,8 +57,26 @@ let rt = class {
 			free
 		};
 	};
+	static chdir = process.chdir;
+	static cwd = process.cwd;
+	static execPath = process.execPath;
 	static exit(code = 0) {
 		process.exit(code);
+	};
+	static gid() {
+		return os.userInfo().gid;
+	};
+	static hostname = os.hostname;
+	static memoryUsage = process.memoryUsage;
+	static osUptime = os.uptime;
+	static systemMemoryInfo() {
+		return {
+			total: os.totalmem(),
+			free: os.freemem()
+		};
+	};
+	static uid() {
+		return os.userInfo().uid;
 	};
 };
 

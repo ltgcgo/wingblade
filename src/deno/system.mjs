@@ -40,6 +40,9 @@ let rt = class {
 	static networkDefer = false;
 	static cores = 0 || 8;
 	static perms = perms;
+	static noColor = Deno.noColor;
+	static pid = Deno.pid;
+	static ppid = Deno.ppid;
 	static get memory() {
 		let {rss, heapTotal, heapUsed, external} = Deno.memoryUsage();
 		let {total, free} = Deno.systemMemoryInfo();
@@ -52,9 +55,18 @@ let rt = class {
 			free
 		};
 	};
+	static chdir = Deno.chdir;
+	static cwd = Deno.cwd;
+	static execPath = Deno.execPath();
 	static exit(code = 0) {
 		Deno.exit(code);
 	};
+	static gid = Deno.gid;
+	static hostname = Deno.hostname;
+	static memoryUsage = Deno.memoryUsage;
+	static osUptime = Deno.uptime;
+	static systemMemoryInfo = Deno.systemMemoryInfo;
+	static uid = Deno.uid;
 };
 
 // Environment variables
