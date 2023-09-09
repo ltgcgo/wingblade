@@ -31,6 +31,11 @@ let rt = class {
 	static os = process.platform;
 	static variant = "Bun";
 	static version = Bun.version;
+	static versions = {
+		"deno": process.versions.node,
+		"v8": process.versions.v8.split("-")[0],
+		"wingblade": props.version
+	};
 	static persist = true;
 	static networkDefer = false;
 	static cores = os.cpus().length;

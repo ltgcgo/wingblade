@@ -4,6 +4,7 @@
 "use strict";
 
 import {PermissionStatus} from "../shared/polyfill.mjs";
+import {props} from "../shared/props.mjs";
 
 let perms = {
 	"query": async (descriptor) => {
@@ -30,7 +31,12 @@ let perms = {
 let rt = class {
 	static os = os.platform();
 	static variant = "Node";
-	static version = process.version.replace("v", "");
+	static version = process.versions.node;
+	static versions = {
+		"deno": "1.36.4",
+		"v8": process.versions.v8.split("-")[0],
+		"wingblade": props.version
+	};
 	static persist = true;
 	static networkDefer = false;
 	static cores = os.cpus().length;

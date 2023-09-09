@@ -1,0 +1,1 @@
+var e={args:WingBlade.args,env:WingBlade.env,version:{deno:"1.36.4",v8:WingBlade.rt.versions.v8,wingblade:WingBlade.version},exit:WingBlade.rt.exit,memoryUsage:function(){return WingBlade.rt.memory}};export{e as Deno};

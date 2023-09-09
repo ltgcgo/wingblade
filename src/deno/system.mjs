@@ -3,6 +3,8 @@
 
 "use strict";
 
+import {props} from "../shared/props.mjs";
+
 let perms = {
 	"query": (descriptor) => {
 		return Deno.permissions.query(descriptor);
@@ -29,6 +31,11 @@ let rt = class {
 	static os = Deno.build.os;
 	static variant = "Deno";
 	static version = Deno.version.deno;
+	static versions = {
+		"deno": Deno.version.deno,
+		"v8": Deno.version.v8,
+		"wingblade": props.version
+	};
 	static persist = true;
 	static networkDefer = false;
 	static cores = 0 || 8;

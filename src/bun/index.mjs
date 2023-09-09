@@ -10,9 +10,11 @@ import web from "./web.mjs";
 import util from "./util.mjs";
 import {} from "./stream.mjs";
 import {initNavigator} from "../shared/browser.mjs";
+import {props} from "../shared/props.mjs";
 
 let WingBlade = class {
 	static args = Bun.argv.slice(2);
+	static version = props.version;
 	static rt = rt;
 	static env = env;
 	static file = file;
