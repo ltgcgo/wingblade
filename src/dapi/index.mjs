@@ -31,5 +31,7 @@ export let Deno = {
 	networkInterfaces: WingBlade.rt.interfaces,
 	osUptime: WingBlade.rt.osUptime,
 	systemMemoryInfo: WingBlade.rt.systemMemoryInfo,
-	uid: WingBlade.rt.uid
+	uid: WingBlade.rt.uid,
+	// HTTP server
+	serve: WingBlade.web.serve
 };
