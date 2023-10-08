@@ -40,6 +40,9 @@ let WingFile = class {
 		};
 	};
 	stream() {};
+	async blob() {
+		// Returns a File object
+	};
 	async text() {};
 	async json() {};
 	async arrayBuffer() {};
@@ -71,7 +74,10 @@ let file = class {
 		// Detect the format of the string
 		let upThis = this,
 		firstCharCode = string.charCodeAt(0);
-		if (string[1] == ":" && firstCharCode > 64 && firstCharCode < 91) {
+		if (
+			string[1] == ":" && firstCharCode > 64 && firstCharCode < 91 ||
+			string.indexOf("\\") > -1 && string.indexOf("/") < 0
+		) {
 			return upThis.DOS;
 		};
 		try {
@@ -84,35 +90,13 @@ let file = class {
 	static delimiter(variant) {
 		return " /\\/"[variant || this.variant];
 	};
-	static basename(path, suffix) {};
-	static isAbsolute(path) {};
-	static relative(from, to) {
-		let upThis = this;
-		from = from || Deno.cwd();
-		to = to || Deno.cwd();
-		let fromVar = upThis.detect(from),
-		toVar = upThis.detect(to);
-		if (toVar != fromVar) {
-			throw(new SyntaxError(`Cannot mix a ${pathTypes[toVar]} path with a ${pathTypes[fromVar]} path`));
+	static basename(path, suffix) {
+		let name = path.split(this.delimiter(this.detect(path))).pop();
+		if (suffix) {
+			return name.replace(suffix, "");
+		} else {
+			return name;
 		};
-		let delim = upThis.delimiter(fromVar),
-		splitF = from.split(delim),
-		splitT = to.split(delim);
-		/*if (!splitF[splitF.length - 1]?.length) {
-			splitF.pop();
-		};*/
-		if (fromVar == upThis.DOS) {
-			if (splitF[0] != splitT[0]) {
-				throw(new Error(`Cannot switch between different drives on DOS`));
-			};
-		};
-		let commonLevels = 0;
-		splitF.forEach((e, i) => {
-			if (e == splitT[i]) {
-				commonLevels ++;
-			};
-		});
-		return `${`..${delim}`.repeat(splitF.length - commonLevels) || `.${delim}`}${splitT.slice(commonLevels).join(delim)}`;
 	};
 	static resolve(path = "./") {
 		Deno.realPathSync(path);
@@ -131,6 +115,24 @@ let file = class {
 			path = path.replace(doubleDelim, delim);
 		};
 		let splitPath = path.split(sourceDelim);
+		switch (sourceVariant) {
+			case upThis.POSIX:
+			case upThis.DOS: {
+				switch (splitPath[0]) {
+					case "":
+					case ".":
+					case "..": {
+						break;
+					};
+					default: {
+						if (!(sourceVariant == upThis.DOS && splitPath[0].length == 2 && splitPath[0][1] == ":")) {
+							splitPath.unshift(".");
+						};
+					};
+				};
+				break;
+			};
+		};
 		if (sourceDelim == "\\" && delimiter == "/" && splitPath[0][1] == ":") {
 			if (splitPath[0] == upThis.fakeDOS) {
 				splitPath[0] = "";
@@ -155,7 +157,15 @@ let file = class {
 				};
 			};
 			if (useFakeDos) {
-				splitPath[0] = upThis.fakeDOS;
+				switch (splitPath[0]) {
+					case ".":
+					case "..": {
+						break;
+					};
+					default: {
+						splitPath[0] = upThis.fakeDOS;
+					};
+				};
 			};
 		};
 		for (let i = splitPath.length - 1; i > 0; i --) {
@@ -171,19 +181,48 @@ let file = class {
 				};
 			};
 		};
-		if (variant == upThis.POSIX) {
-			switch (splitPath[0]) {
-				case "":
-				case ".":
-				case "..": {
-					break;
-				};
-				default: {
-					splitPath.unshift(".");
-				};
+		return splitPath.join(delimiter);
+	};
+	static isAbsolute(path) {
+		switch (this.normalize(path).split(this.delimiter(this.detect(path)))[0]) {
+			case ".":
+			case "..": {
+				return true;
+				break;
+			};
+			default: {
+				return false;
 			};
 		};
-		return splitPath.join(delimiter);
+	};
+	static relative(from, to) {
+		// There still are some problems, do not use yet!
+		let upThis = this;
+		from = upThis.normalize(from || Deno.cwd());
+		to = upThis.normalize(to || Deno.cwd());
+		let fromVar = upThis.detect(from),
+		toVar = upThis.detect(to);
+		if (toVar != fromVar) {
+			throw(new SyntaxError(`Cannot mix a ${pathTypes[toVar]} path with a ${pathTypes[fromVar]} path`));
+		};
+		let delim = upThis.delimiter(fromVar),
+		splitF = from.split(delim),
+		splitT = to.split(delim);
+		/*if (!splitF[splitF.length - 1]?.length) {
+			splitF.pop();
+		};*/
+		if (fromVar == upThis.DOS) {
+			if (splitF[0] != splitT[0]) {
+				throw(new Error(`Cannot switch between different drives on DOS`));
+			};
+		};
+		let commonLevels = 0;
+		splitF.forEach((e, i) => {
+			if (e == splitT[i]) {
+				commonLevels ++;
+			};
+		});
+		return `${`..${delim}`.repeat(splitF.length - commonLevels) || `.${delim}`}${splitT.slice(commonLevels).join(delim)}`;
 	};
 	// Filesystem APIs
 };
