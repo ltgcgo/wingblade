@@ -12,7 +12,7 @@ export let Deno = {
 	pid: WingBlade.rt.pid,
 	ppid: WingBlade.rt.ppid,
 	version: {
-		deno: "1.36.4",
+		deno: "1.37.1",
 		v8: WingBlade.rt.versions.v8,
 		wingblade: WingBlade.version
 	},
