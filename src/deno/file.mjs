@@ -11,8 +11,8 @@ let wrapDenoFileInfo = function (obj) {
 	return obj;
 };
 
-// A lazy-loaded async file API
-// Can be a file or a directory
+// A lazy-loaded async file API, based on Blob, File and Deno.FsFile
+// Can be a file, folder or anything supported on the file system
 let WingFile = class extends EventTarget {
 	// File types
 	static BLOB = 1;
