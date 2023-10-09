@@ -7,31 +7,160 @@ import {localToken, validateToken} from "../shared/localToken.mjs";
 
 const pathTypes = "auto,POSIX,DOS,URL".split(",");
 
+let wrapDenoFileInfo = function (obj) {
+	return obj;
+};
+
 // A lazy-loaded async file API
-let WingFile = class {
+// Can be a file or a directory
+let WingFile = class extends EventTarget {
+	// File types
+	static BLOB = 1;
+	static FILE = 1;
+	static FOLDER = 2;
+	static DIRECTORY = 2;
+	static SYMLINK = 3;
+	//static HARDLINK = 3;
+	static SOCKET = 4;
+	static FIFO = 5;
+	static NAMEDPIPE = 5;
+	static BLOCKDEV = 6;
+	static CHARDEV = 7;
+	// onopen, onclose
+	// onaccess, oncreate, onmodify, onremove
 	#open = false;
+	#size = -1;
+	#offset = 0; // The real offset according to the file
 	#start = 0;
 	#end = -1;
 	#root;
+	#childId = -1;
+	#children = []; // Slices, not directories
 	#path; // An absolute path
+	#watcher;
 	#handle;
-	lastModified;
-	name;
-	type;
-	get size() {
-		return this.#end - this.#start;
+	#streamTap;
+	#streamSink;
+	#timeMod; // modified
+	#timeNew; // created
+	#timeVue; // accessed
+	#kind; // file type (file, folder, etc)
+	#type; // MIME type
+	#name; // file name
+	// File metadata
+	get type() {
+		return this.#type;
 	};
+	get name() {
+		return this.#name;
+	};
+	get kind() {
+		return this.#kind;
+	};
+	get size() {
+		if (this.#root) {
+			// Sliced file
+			return this.#end - this.#start;
+		} else {
+			//
+			return this.#size;
+		};
+	};
+	get offset() {
+		return this.#offset - this.#start;
+	};
+	get lastModified() {
+		return this.#timeMod;
+	};
+	get modified() {
+		return this.#timeMod;
+	};
+	get mtimeMs() {
+		return this.#timeMod;
+	};
+	get mtime() {
+		return new Date(this.#timeMod);
+	};
+	get accessed() {
+		return this.#timeVue;
+	};
+	get atimeMs() {
+		return this.#timeVue;
+	};
+	get atime() {
+		return new Date(this.#timeVue);
+	};
+	get created() {
+		return this.#timeNew;
+	};
+	get birthTimeMs() {
+		return this.#timeNew;
+	};
+	get birthTime() {
+		return new Date(this.#timeNew);
+	};
+	get watched() {
+		return !!this.#watcher;
+	};
+	// Constructor
 	constructor(name = "", opt = {}) {
 		let validated = validateToken(opt?.token),
 		upThis = this;
 		upThis.type = opt?.type || "";
-		upThis.lastModified = opt?.lastModified || 0;
 		upThis.name = opt?.name;
+		upThis.#timeMod = opt?.mtimeMs || opt?.modified || opt?.lastModified || NaN;
+		upThis.#timeNew = opt?.birthTimeMs || opt?.created || NaN;
+		upThis.#timeVue = opt?.atimeMs || opt?.accessed || NaN;
 		if (validated) {
 			upThis.#root = opt?.root;
 			upThis.#start = opt?.start || 0;
 			upThis.#end = opt?.end || -1;
 		};
+		if (opt?.open) {
+			// Open immediately
+		};
+	};
+	// Non-async APIs
+	openSync() {};
+	// Doesn't need to be opened
+	watch() {
+	};
+	unwatch() {};
+	readAutoSync(expectedType = 0) {
+	};
+	readDirSync() {};
+	readFileSync() {};
+	readLinkSync() {};
+	readTextSync() {};
+	readTextFileSync = this.readTextSync;
+	writeFileSync() {};
+	writeTextSync() {};
+	statSync() {};
+	lstatSync() {};
+	chmodSync() {};
+	chownSync() {};
+	createSync(noOpen) {};
+	mkdirSync() {};
+	mvSync(newPath) {};
+	resolveSync() {};
+	realPathSync = this.resolveSync;
+	removeSync() {};
+	renameSync = this.mvSync;
+	rmSync = this.removeSync;
+	touchSync = this.createSync;
+	truncateSync() {};
+	uTimeSync() {};
+	copyFromSync(path, openTarget) {};
+	copyToSync(path, openTarget) {};
+	linkFromSync(path, openTarget) {};
+	linkToSync(path, openTarget) {};
+	moveFromSync(path) {};
+	moveToSync = this.mvSync;
+	symlinkFromSync(path, openTarget) {};
+	symlinkToSync(path, openTarget) {};
+	// Needs the file to be opened
+	close(keepWatching) {
+		// Close will also unwatch by default
 	};
 	slice(start = 0, end, type = "") {
 		let upThis = this;
@@ -40,19 +169,39 @@ let WingFile = class {
 		};
 	};
 	stream() {};
+	readSync() {};
+	seekSync() {};
+	writeSync() {};
+	// Async APIs
+	async open() {};
+	// Doesn't need to be opened
 	async blob() {
 		// Returns a File object
 	};
 	async text() {};
 	async json() {};
 	async arrayBuffer() {};
+	// Needs the file to be opened
 };
 
 // File operations
 let file = class {
+	// Path types
 	static POSIX = 1;
 	static DOS = 2;
 	static URL = 3;
+	// File types
+	static BLOB = WingFile.FILE;
+	static FILE = WingFile.FILE;
+	static FOLDER = WingFile.FOLDER;
+	static DIRECTORY = WingFile.FOLDER;
+	static SYMLINK = WingFile.SYMLINK;
+	//static HARDLINK = 3;
+	static SOCKET = WingFile.SOCKET;
+	static FIFO = WingFile.FIFO;
+	static NAMEDPIPE = WingFile.FIFO;
+	static BLOCKDEV = WingFile.BLOCKDEV;
+	static CHARDEV = WingFile.CHARDEV;
 	static fakePosix = "/mnt/windev".split("/");
 	static fakeDOS = "Z:";
 	// Simple APIs
@@ -98,7 +247,14 @@ let file = class {
 			return name;
 		};
 	};
+	static expand(basepath, relative) {
+		// Expand relative paths to absolute paths
+		if (!basepath) {
+			basepath = Deno.cwd();
+		};
+	};
 	static resolve(path = "./") {
+		// Resolve paths to their real absolute paths
 		Deno.realPathSync(path);
 	};
 	static normalize(path, variant) {
@@ -184,6 +340,7 @@ let file = class {
 		return splitPath.join(delimiter);
 	};
 	static isAbsolute(path) {
+		// Is a given path an absolute path?
 		switch (this.normalize(path).split(this.delimiter(this.detect(path)))[0]) {
 			case ".":
 			case "..": {
