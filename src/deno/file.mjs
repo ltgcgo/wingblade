@@ -15,17 +15,17 @@ let wrapDenoFileInfo = function (obj) {
 // Can be a file, folder or anything supported on the file system
 let WingFile = class extends EventTarget {
 	// File types
-	static BLOB = 1;
-	static FILE = 1;
-	static FOLDER = 2;
-	static DIRECTORY = 2;
-	static SYMLINK = 3;
-	//static HARDLINK = 3;
-	static SOCKET = 4;
-	static FIFO = 5;
-	static NAMEDPIPE = 5;
-	static BLOCKDEV = 6;
-	static CHARDEV = 7;
+	BLOB = 1;
+	FILE = 1;
+	FOLDER = 2;
+	DIRECTORY = 2;
+	SYMLINK = 3;
+	//HARDLINK = 3;
+	SOCKET = 4;
+	FIFO = 5;
+	NAMEDPIPE = 5;
+	BLOCKDEV = 6;
+	CHARDEV = 7;
 	// onopen, onclose
 	// onaccess, oncreate, onmodify, onremove
 	#open = false;
