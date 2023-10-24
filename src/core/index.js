@@ -5,13 +5,14 @@
 
 let main = async function (args) {
 	// Print navigator info out
-	console.info("{");
+	/*console.info("{");
 	for (let i in self.navigator) {
 		console.info(`    "${i}": ${JSON.stringify(navigator[i])}`);
 	};
-	console.info("}");
+	console.info("}");*/
 	// Start a web server
 	WingBlade.web.serve(async (req, client) => {
+		console.debug(`${req.method.toUpperCase()} ${req.url}`);
 		switch (true) {
 			case (req.headers.get("upgrade")?.toLowerCase() == "websocket"): {
 				let {socket, response} = WingBlade.web.acceptWs(req);
